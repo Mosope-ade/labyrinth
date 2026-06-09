@@ -1,0 +1,13 @@
+router bgp {{ local_as }}
+ bgp router-id {{ router_id }}
+ bgp log-neighbor-changes
+{% for neighbor in neighbors %}
+ neighbor {{ neighbor.address }} remote-as {{ neighbor.remote_as }}
+{% endfor %}
+ !
+ address-family ipv4
+{% for neighbor in neighbors %}
+  neighbor {{ neighbor.address }} activate
+{% endfor %}
+ exit-address-family
+!

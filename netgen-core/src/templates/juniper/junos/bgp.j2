@@ -1,0 +1,19 @@
+protocols {
+    bgp {
+        group INTERNAL {
+            type internal;
+{% if router_id %}
+            local-address {{ router_id }};
+{% endif %}
+{% for neighbor in neighbors %}
+            neighbor {{ neighbor.address }};
+{% endfor %}
+        }
+    }
+}
+routing-options {
+    autonomous-system {{ local_as }};
+{% if router_id %}
+    router-id {{ router_id }};
+{% endif %}
+}

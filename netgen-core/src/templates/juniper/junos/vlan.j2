@@ -1,0 +1,20 @@
+vlans {
+    {{ vlan_name }} {
+        vlan-id {{ vlan_id }};
+{% if svi_cidr %}
+        l3-interface irb.{{ vlan_id }};
+{% endif %}
+    }
+}
+{% if svi_cidr %}
+interfaces {
+    irb {
+        unit {{ vlan_id }} {
+            description "{{ vlan_name }} IRB";
+            family inet {
+                address {{ svi_cidr }};
+            }
+        }
+    }
+}
+{% endif %}

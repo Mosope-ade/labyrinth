@@ -1,0 +1,12 @@
+ip access-list extended {{ acl_name }}
+{% if src_subnet and dst_subnet %}
+ {{ action }} ip {{ src_subnet }} {{ src_wildcard }} {{ dst_subnet }} {{ dst_wildcard }}
+{% elif src_subnet %}
+ {{ action }} ip {{ src_subnet }} {{ src_wildcard }} any
+{% elif dst_subnet %}
+ {{ action }} ip any {{ dst_subnet }} {{ dst_wildcard }}
+{% else %}
+ {{ action }} ip any any
+{% endif %}
+ deny ip any any log
+!

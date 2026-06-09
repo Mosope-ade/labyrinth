@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f5f4f1;
+  --foreground: #1a1a18;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* React Flow overrides */
+.react-flow__renderer { background: transparent; }
+.react-flow__handle { opacity: 0; pointer-events: none; }
+.react-flow__attribution { display: none; }
+.react-flow__edge-path { stroke: #d8d6cc; }

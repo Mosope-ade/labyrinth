@@ -1,0 +1,10 @@
+vlan {{ vlan_id }}
+ name {{ vlan_name }}
+!
+{% if svi_addr %}
+interface Vlan{{ vlan_id }}
+ description {{ vlan_name }} SVI
+ ip address {{ svi_addr }} {{ svi_mask }}
+ no shutdown
+!
+{% endif %}

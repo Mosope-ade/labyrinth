@@ -1,0 +1,45 @@
+system {
+    services {
+        ssh {
+            root-login deny;
+            protocol-version v2;
+            connection-limit 10;
+            rate-limit 3;
+        }
+    }
+    syslog {
+        file messages {
+            any notice;
+            authorization info;
+        }
+        file security {
+            authorization any;
+        }
+    }
+    login {
+        retry-options {
+            tries-before-disconnect 3;
+            backoff-threshold 1;
+            backoff-factor 5;
+            maximum-time 40;
+        }
+    }
+}
+{% if snmp_enabled %}
+snmp {
+    v3 {
+        usm {
+            local-engine {
+                user labyrinth-snmp {
+                    authentication-sha {
+                        authentication-password "AuthPass123";
+                    }
+                    privacy-aes128 {
+                        privacy-password "PrivPass123";
+                    }
+                }
+            }
+        }
+    }
+}
+{% endif %}

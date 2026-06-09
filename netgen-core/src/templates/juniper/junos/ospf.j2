@@ -1,0 +1,24 @@
+protocols {
+    ospf {
+        area 0.0.0.0 {
+{% if authentication %}
+{% for iface in active_interfaces %}
+            interface {{ iface }} {
+                authentication {
+                    md5 1 key "ospf-auth-key";
+                }
+            }
+{% endfor %}
+{% else %}
+{% for iface in active_interfaces %}
+            interface {{ iface }};
+{% endfor %}
+{% endif %}
+        }
+    }
+}
+{% if router_id %}
+routing-options {
+    router-id {{ router_id }};
+}
+{% endif %}

@@ -1,0 +1,30 @@
+[package]
+name = "netgen-api"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Axum API server — calls netgen-core, handles AI conversation layer"
+
+[lints]
+workspace = true
+
+[dependencies]
+netgen-core = { path = "../netgen-core" }
+axum = { version = "0.8", features = ["ws", "multipart"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace", "limit"] }
+jsonwebtoken = "9"
+sqlx = { version = "0.8", features = ["postgres", "runtime-tokio-rustls", "uuid", "chrono"] }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+validator = { version = "0.18", features = ["derive"] }
+dotenvy = "0.15"
+bcrypt = "0.15"

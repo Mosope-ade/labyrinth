@@ -1,0 +1,28 @@
+no service telnet
+service password-encryption
+service tcp-keepalives-in
+service tcp-keepalives-out
+!
+no ip http server
+no ip http secure-server
+!
+line vty 0 4
+ transport input ssh
+ login local
+ exec-timeout 10 0
+!
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+!
+{% if snmp_enabled %}
+no snmp-server community public RO
+no snmp-server community private RW
+snmp-server group SNMPV3GROUP v3 priv
+snmp-server user SNMPV3USER SNMPV3GROUP v3 auth sha AuthPass123 priv aes 128 PrivPass123
+{% else %}
+no snmp-server
+{% endif %}
+!
+logging buffered 16384
+logging console critical
