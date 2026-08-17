@@ -193,11 +193,20 @@ const Ctx = createContext<{
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initial, (s) => {
-    // Rehydrate token from localStorage on first render
+    // Rehydrate token from localStorage on first render.
+    // Reject sentinel values like 'guest' that should never be persisted.
     if (typeof window === 'undefined') return s
     const token = localStorage.getItem('laby_token')
     const email = localStorage.getItem('laby_email')
-    return token && email ? { ...s, token, userEmail: email } : s
+    if (!token || !email || token === 'guest' || email === 'guest') {
+      // Clean up any stale sentinel values so they don't accumulate.
+      if (token === 'guest' || email === 'guest') {
+        localStorage.removeItem('laby_token')
+        localStorage.removeItem('laby_email')
+      }
+      return s
+    }
+    return { ...s, token, userEmail: email }
   })
 
   return <Ctx.Provider value={{ state, dispatch }}>{children}</Ctx.Provider>

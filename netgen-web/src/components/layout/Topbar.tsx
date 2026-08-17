@@ -2,6 +2,7 @@
 
 import { useApp } from '@/lib/store'
 import { downloadExport } from '@/lib/api'
+import { useState } from 'react'
 
 // ─── Logo ─────────────────────────────────────────────────────────────────────
 
@@ -21,6 +22,10 @@ function Logo() {
 
 export default function Topbar() {
   const { state, dispatch } = useApp()
+  const [avatarHovered, setAvatarHovered] = useState(false)
+
+  const isGuest = !state.userEmail || state.userEmail === 'guest'
+  const isLoggedIn = !isGuest
 
   function signOut() {
     localStorage.removeItem('laby_token')
@@ -28,8 +33,13 @@ export default function Topbar() {
     dispatch({ type: 'AUTH_CLEAR' })
   }
 
-  const initials = state.userEmail && state.userEmail !== 'guest'
-    ? state.userEmail.slice(0, 2).toUpperCase()
+  function signIn() {
+    // Clear the guest sentinel so the auth modal shows
+    dispatch({ type: 'AUTH_CLEAR' })
+  }
+
+  const initials = isLoggedIn
+    ? state.userEmail!.slice(0, 2).toUpperCase()
     : 'G'
 
   return (
@@ -103,18 +113,35 @@ export default function Topbar() {
           </button>
         )}
 
-        <div
-          title={state.userEmail ?? 'Guest'}
-          onClick={state.userEmail && state.userEmail !== 'guest' ? signOut : undefined}
-          style={{
-            width: 26, height: 26, borderRadius: '50%',
-            background: '#1a1a18', color: '#ffffff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 10, fontWeight: 600, cursor: 'pointer',
-            flexShrink: 0,
-          }}
-        >
-          {initials}
+        <div style={{ position: 'relative' }}>
+          <button
+            title={isLoggedIn ? `${state.userEmail} — click to sign out` : 'Sign in or create account'}
+            onClick={isLoggedIn ? signOut : signIn}
+            onMouseEnter={() => setAvatarHovered(true)}
+            onMouseLeave={() => setAvatarHovered(false)}
+            style={{
+              width: 26, height: 26, borderRadius: '50%',
+              background: isLoggedIn ? '#1a1a18' : '#d8d6cc',
+              color: '#ffffff',
+              border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 10, fontWeight: 600, cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            {initials}
+          </button>
+          {avatarHovered && (
+            <div style={{
+              position: 'absolute', right: 0, top: 34,
+              background: '#1a1a18', color: '#ffffff',
+              fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap',
+              padding: '5px 9px', borderRadius: 6,
+              pointerEvents: 'none', zIndex: 9998,
+            }}>
+              {isLoggedIn ? 'Sign out' : 'Sign in / create account'}
+            </div>
+          )}
         </div>
       </div>
     </header>

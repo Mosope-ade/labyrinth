@@ -93,7 +93,12 @@ const PHASE_COLORS = {
 
 // ─── Chat Panel ───────────────────────────────────────────────────────────────
 
-export default function ChatPanel() {
+interface ChatPanelProps {
+  collapsed: boolean
+  onToggle: () => void
+}
+
+export default function ChatPanel({ collapsed, onToggle }: ChatPanelProps) {
   const { state, dispatch } = useApp()
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -158,17 +163,104 @@ export default function ChatPanel() {
 
   const phaseColors = PHASE_COLORS[state.phase] ?? PHASE_COLORS.gathering
 
+  // ── Collapsed strip ──────────────────────────────────────────────────────────
+  if (collapsed) {
+    return (
+      <div style={{
+        width: 44, flexShrink: 0,
+        background: '#ffffff',
+        borderLeft: '1px solid #e8e6e0',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center',
+        paddingTop: 6,
+        gap: 8,
+        transition: 'width 0.2s ease',
+      }}>
+        {/* Expand button */}
+        <button
+          onClick={onToggle}
+          title="Open chat"
+          style={{
+            width: 32, height: 32, borderRadius: 8,
+            border: 'none', cursor: 'pointer',
+            background: 'transparent',
+            color: '#888780',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = '#f0ede6')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+        >
+          {/* Chevron pointing left = open panel to the left */}
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M9 11L5 7L9 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
+
+        {/* AI icon */}
+        <div style={{
+          width: 24, height: 24, borderRadius: '50%',
+          background: 'linear-gradient(135deg, #534AB7, #7F77DD)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        }}>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <circle cx="6" cy="3" r="1.5" fill="white"/>
+            <circle cx="2" cy="9" r="1.5" fill="white"/>
+            <circle cx="10" cy="9" r="1.5" fill="white"/>
+            <line x1="6" y1="4.5" x2="2" y2="7.5" stroke="white" strokeWidth="1"/>
+            <line x1="6" y1="4.5" x2="10" y2="7.5" stroke="white" strokeWidth="1"/>
+          </svg>
+        </div>
+
+        {/* Phase dot */}
+        <div style={{
+          width: 8, height: 8, borderRadius: '50%',
+          background: phaseColors.text,
+          flexShrink: 0, marginTop: 2,
+        }} title={state.phase} />
+
+        {/* Message count when there's a conversation */}
+        {state.messages.length > 0 && (
+          <div style={{
+            fontSize: 9, fontWeight: 600,
+            writingMode: 'vertical-rl',
+            textOrientation: 'mixed',
+            userSelect: 'none',
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            color: '#b4b2a9',
+          }}>
+            {state.messages.length}
+          </div>
+        )}
+
+        <style>{`
+          @keyframes logo-roll {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+          }
+          @keyframes grid-pulse {
+            0%, 100% { opacity: 0.2; }
+            50%       { opacity: 0.7; }
+          }
+        `}</style>
+      </div>
+    )
+  }
+
+  // ── Expanded panel ───────────────────────────────────────────────────────────
   return (
     <div style={{
       width: 300, flexShrink: 0,
       background: '#ffffff',
       borderLeft: '1px solid #e8e6e0',
       display: 'flex', flexDirection: 'column',
+      transition: 'width 0.2s ease',
     }}>
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        padding: '0 12px', height: 44,
+        padding: '0 8px 0 12px', height: 44,
         borderBottom: '1px solid #e8e6e0', flexShrink: 0,
       }}>
         <div style={{
@@ -191,9 +283,30 @@ export default function ChatPanel() {
           fontSize: 9, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em',
           background: phaseColors.bg, color: phaseColors.text,
           padding: '2px 6px', borderRadius: 4,
+          marginRight: 2,
         }}>
           {state.phase}
         </div>
+        {/* Collapse button */}
+        <button
+          onClick={onToggle}
+          title="Collapse chat"
+          style={{
+            width: 28, height: 28, borderRadius: 6,
+            border: 'none', cursor: 'pointer',
+            background: 'transparent',
+            color: '#888780',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = '#f0ede6')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+        >
+          {/* Chevron pointing right = close panel */}
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M5 3L9 7L5 11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
       </div>
 
       {/* Messages */}

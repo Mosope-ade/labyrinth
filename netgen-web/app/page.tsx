@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useApp } from '@/lib/store'
 import { connectJobStream, getProject, getProjectTurns, listProjects, register, login } from '@/lib/api'
 import type { Project } from '@/lib/types'
@@ -12,7 +13,7 @@ import TopologyCanvas from '@/src/components/topology/TopologyCanvas'
 import DevicePanel from '@/src/components/panels/DevicePanel'
 import ChatPanel from '@/src/components/chat/ChatPanel'
 
-// ─── Auth modal ───────────────────────────────────────────────────────────────
+// ─── Auth modal (rendered via portal so it sits above all stacking contexts) ──
 
 function AuthModal() {
   const { dispatch } = useApp()
@@ -21,6 +22,9 @@ function AuthModal() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  // Defer portal mount to after hydration — avoids server/client mismatch.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
 
   async function submit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -40,12 +44,12 @@ function AuthModal() {
     }
   }
 
-  return (
+  const content = (
     <div style={{
       position: 'fixed', inset: 0,
       background: 'rgba(26,26,24,0.7)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 100, backdropFilter: 'blur(4px)',
+      zIndex: 9999, backdropFilter: 'blur(4px)',
     }}>
       <div style={{
         background: '#ffffff',
@@ -160,6 +164,9 @@ function AuthModal() {
       </div>
     </div>
   )
+
+  if (!mounted) return null
+  return createPortal(content, document.body)
 }
 
 // ─── Root workspace layout ────────────────────────────────────────────────────
@@ -167,6 +174,7 @@ function AuthModal() {
 export default function Home() {
   const { state, dispatch } = useApp()
   const wsRef = useRef<WebSocket | null>(null)
+  const [chatCollapsed, setChatCollapsed] = useState(false)
 
   // Fetch project history whenever a real user signs in
   useEffect(() => {
@@ -273,7 +281,10 @@ export default function Home() {
           </div>
 
           {/* Chat panel */}
-          <ChatPanel />
+          <ChatPanel
+            collapsed={chatCollapsed}
+            onToggle={() => setChatCollapsed(v => !v)}
+          />
         </div>
       </div>
     </>
