@@ -1,0 +1,64 @@
+
+1. Topology & Routing Algorithms (Graph Theory)
+
+Once your network is represented in memory as a mathematical graph, these algorithms build the links, calculate paths, and guarantee redundancy.
+• Breadth-First Search (BFS) & Depth-First Search (DFS): Used for basic graph traversal, verifying that all nodes are connected (no isolated islands), and discovering neighbor relationships.
+• Dijkstra’s Algorithm & A* Search: Calculates the shortest or lowest-cost path between any two devices to generate static routes and verify latency constraints.
+• Yen’s K-Shortest Paths Algorithm: Finds not just the best path, but the 2nd and 3rd best paths. This is essential for configuring backup routes and Equal-Cost Multi-Path (ECMP) load balancing.
+• Suurballe’s Algorithm: Finds two completely disjoint (non-overlapping) paths between two nodes. This mathematically guarantees that a single cable cut or switch failure will not sever critical connections.
+• Tarjan’s Bridge-Finding & Articulation Point Algorithms: Scans the generated topology to detect Single Points of Failure (SPOFs)—specifically, any single link (bridge) or single device (articulation point) whose removal splits the network in two.
+• Kruskal’s or Prim’s Algorithm (Minimum Spanning Tree): Used for Layer-2 loop prevention (simulating Spanning Tree Protocol) or connecting branch sites with the minimum possible cabling/link cost.
+
+
+2. IP Addressing & Subnetting Algorithms (Trees & Bitwise Math)
+
+To allocate IP addresses dynamically without overlaps or wasted space, you rely on prefix trees and binary arithmetic.
+• Binary Trie (Radix Tree / Prefix Tree): The core data structure for Automated IPAM. It represents an IP block (like 10.0.0.0/8) as a binary tree where left branches are 0 and right branches are 1, allowing instant allocation and collision detection.
+• Variable Length Subnet Masking (VLSM) Greedy Allocation: Sorts all requested subnets from largest host count to smallest, then recursively splits the binary trie to assign the tightest possible CIDR block to each subnet.
+• Bitwise Masking & Longest Prefix Match (LPM): Uses bitwise AND / OR operations to calculate network IDs, broadcast addresses, and simulate how routers select the most specific route in a routing table.
+
+3. Hardware Selection & Layout Optimization (Bin Packing & Matching)
+
+When matching user requirements to your device catalog and cabling ports, you use resource allocation algorithms.
+• First-Fit Decreasing (FFD) / Best-Fit Decreasing (BFD) Bin Packing: Used to assign servers, access points, or subnets onto switches and routers. It packs interfaces as efficiently as possible without exceeding port counts or throughput limits.
+• Bipartite Graph Matching (Hopcroft-Karp or Hungarian Algorithm): Optimally maps connections between two distinct layers—such as connecting 32 Leaf switches to 4 Spine switches—ensuring balanced port usage and minimal cabling.
+
+4. Formal Verification & Security Algorithms (Logic & Automata)
+
+Before outputting configurations, these algorithms prove that firewall rules and routing tables behave safely.
+• Header Space Analysis (HSA) / Binary Decision Diagrams (BDDs): Models packet headers (Source IP, Dest IP, Port, Protocol) as geometric spaces or boolean functions to mathematically verify whether a packet can travel from Point A to Point B through multiple firewalls.
+• Cycle Detection (Directed Acyclic Graph / Topological Sort): Detects infinite routing loops in static routes or BGP policies before deployment.
+
+
+5. Core Mathematical Models
+
+Your engine relies on four foundational mathematical frameworks to hold everything together.
+
+Mathematical Model	How the Core Engine Uses It
+Directed & Undirected Multigraphs G = (V, E)	Network Representation: Devices are vertices (V), cables/tunnels are edges (E). A multigraph is required because two switches often have multiple parallel links (LAG/Port-Channels) between them.
+Integer Linear Programming (ILP)	Cost & Capacity Optimization: Formulates hardware selection as equations: Minimize \(\sum (\text{Device Cost})\) subject to \(\sum (\text{Ports}) \ge \text{Required Ports}\) and Throughput ≥ Peak Traffic.
+Boolean Satisfiability (SAT) & SMT	Policy & Constraint Solving: Translates complex rules (e.g., "Prod cannot reach Dev" AND "All traffic must pass through Firewall X") into boolean logic formulas solved by tools like Z3.
+Max-Flow Min-Cut Theorem	Bandwidth & Bottleneck Analysis: Models links as pipes with capacities to calculate the maximum total data throughput between two zones and identify where congestion will happen first.
+
+
+### some crates to use
+
+• Graph Theory & Routing (petgraph): The standard graph library in Rust. Use petgraph::graph::UnGraph or DiGraph to store your topology. It has built-in implementations for Dijkstra’s, A*, Tarjan’s strongly connected components (for loop detection), and BFS/DFS.
+• IP Addressing & Prefix Trees (ipnetwork + prefix-trie):
+	• ipnetwork handles bitwise CIDR math, subnet masks, and host iteration safely.
+	• prefix-trie gives you a ready-made Binary Radix Tree for your Automated IPAM and Longest Prefix Match (LPM) routing lookups.
+• Constraint Solvers (good_lp or z3):
+	• good_lp provides a clean Rust API for Integer Linear Programming (ILP) (using backends like HiGHS or CBC) to solve hardware selection and cost minimization.
+	• z3 binds directly to Microsoft’s Z3 theorem prover for SMT/SAT policy and firewall verification.
+• Schema & Serialization (serde + serde_json / schemars):
+	• serde parses the JSON intent from your AI layer into strict Rust structs and enums.
+	• schemars automatically generates a JSON Schema from your Rust types, which you can feed directly into the LLM's "Structured Outputs" parameter so the AI cannot return invalid JSON.
+• Config Rendering (tera or minijinja): Fast, Jinja2-compatible template engines for compiling your validated internal graph into Cisco IOS, Juniper, or Terraform files.
+
+### Leveraging Rust’s Type System for Network Safety
+
+One of Rust's biggest advantages here is making invalid network topologies unrepresentable in code:
+• State-Machine Typestate Pattern: Represent your topology as distinct structs at each stage of compilation (e.g., UnallocatedGraph → IpAssignedGraph → VerifiedGraph). Your rendering engine only accepts a VerifiedGraph, making it physically impossible to export unverified configs.
+• Enum-Driven Hardware Constraints: Model device ports and protocols as strict enums (e.g., PortSpeed::TenGig, Protocol::Bgp) rather than strings, eliminating typo bugs during hardware matching.
+• Zero-Cost Parallel Verification (rayon): When running failure simulations (deleting one link at a time and re-running Dijkstra's across 500 nodes), adding .par_iter() with rayon distributes the math across all CPU cores effortlessly.
+

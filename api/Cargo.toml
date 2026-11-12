@@ -1,0 +1,10 @@
+[package]
+name = "labyrinth-api"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+publish.workspace = true
+description = "Hosted API application boundary"
+
+[lints]
+workspace = true

@@ -1,0 +1,59 @@
+schema_version: catalog_v1
+version: 1.0.0
+archetypes:
+  - id: small-access
+    roles: [access_switch]
+    relative_cost_tier: 1
+    features: [switching, routing, vlan, lacp, poe]
+    poe_budget_watts: 700
+    port_groups:
+      - id: access
+        count: 24
+        speeds_mbps: [1000]
+        media: copper
+        poe_watts_per_port: 30
+        shared_capacity_mbps: null
+        breakout: null
+      - id: uplink
+        count: 4
+        speeds_mbps: [10000]
+        media: fiber
+        poe_watts_per_port: null
+        shared_capacity_mbps: null
+        breakout: null
+    operating_modes:
+      - id: base
+        features: [switching, routing, vlan, lacp, poe]
+        throughput_mbps: 10000
+      - id: constrained
+        features: [switching, vlan]
+        throughput_mbps: 4000
+    reference_hints: []
+  - id: large-access
+    roles: [access_switch]
+    relative_cost_tier: 3
+    features: [switching, routing, vlan, lacp, poe]
+    poe_budget_watts: 740
+    port_groups:
+      - id: access
+        count: 48
+        speeds_mbps: [1000]
+        media: copper
+        poe_watts_per_port: 30
+        shared_capacity_mbps: null
+        breakout: null
+      - id: uplink
+        count: 4
+        speeds_mbps: [10000]
+        media: fiber
+        poe_watts_per_port: null
+        shared_capacity_mbps: null
+        breakout: null
+    operating_modes:
+      - id: base
+        features: [switching, routing, vlan, lacp, poe]
+        throughput_mbps: 10000
+      - id: constrained
+        features: [switching, vlan]
+        throughput_mbps: 4000
+    reference_hints: []

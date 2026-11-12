@@ -1,0 +1,10 @@
+[package]
+name = "labyrinth-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+publish.workspace = true
+description = "Hosted laby client boundary"
+
+[lints]
+workspace = true

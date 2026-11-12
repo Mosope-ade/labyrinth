@@ -1,0 +1,128 @@
+schema_version: catalog_v1
+version: 1.1.0
+archetypes:
+  - id: access-switch
+    roles: [access_switch]
+    relative_cost_tier: 1
+    features: [switching, routing, vlan, ecmp, poe, lacp, rapid_spanning_tree]
+    poe_budget_watts: null
+    port_groups:
+      - id: copper
+        count: 48
+        speeds_mbps: [1000]
+        media: copper
+        poe_watts_per_port: null
+        shared_capacity_mbps: null
+        breakout: null
+      - id: fiber
+        count: 32
+        speeds_mbps: [1000, 10000, 40000, 100000]
+        media: fiber
+        poe_watts_per_port: null
+        shared_capacity_mbps: null
+        breakout: null
+    operating_modes:
+      - id: base
+        features: [switching, routing, vlan, ecmp, poe, lacp, rapid_spanning_tree]
+        throughput_mbps: 100000
+    reference_hints: []
+  - id: core-switch
+    roles: [core_switch]
+    relative_cost_tier: 2
+    features: [switching, routing, vlan, ecmp, high_availability]
+    poe_budget_watts: null
+    port_groups:
+      - id: copper
+        count: 48
+        speeds_mbps: [1000]
+        media: copper
+        poe_watts_per_port: null
+        shared_capacity_mbps: null
+        breakout: null
+      - id: fiber
+        count: 32
+        speeds_mbps: [1000, 10000, 40000, 100000]
+        media: fiber
+        poe_watts_per_port: null
+        shared_capacity_mbps: null
+        breakout: null
+    operating_modes:
+      - id: base
+        features: [switching, routing, vlan, ecmp, high_availability]
+        throughput_mbps: 100000
+    reference_hints: []
+  - id: zone-distribution
+    roles: [distribution_switch]
+    relative_cost_tier: 2
+    features: [switching, routing, vlan, ecmp, high_availability, lacp, rapid_spanning_tree]
+    poe_budget_watts: null
+    port_groups:
+      - id: copper
+        count: 48
+        speeds_mbps: [1000]
+        media: copper
+        poe_watts_per_port: null
+        shared_capacity_mbps: null
+        breakout: null
+      - id: fiber
+        count: 32
+        speeds_mbps: [1000, 10000, 40000, 100000]
+        media: fiber
+        poe_watts_per_port: null
+        shared_capacity_mbps: null
+        breakout: null
+    operating_modes:
+      - id: base
+        features: [switching, routing, vlan, ecmp, high_availability, lacp, rapid_spanning_tree]
+        throughput_mbps: 100000
+    reference_hints: []
+  - id: zone-firewall
+    roles: [firewall]
+    relative_cost_tier: 3
+    features: [routing, firewall, ips, vpn, nat, ecmp, high_availability, lacp]
+    poe_budget_watts: null
+    port_groups:
+      - id: copper
+        count: 48
+        speeds_mbps: [1000]
+        media: copper
+        poe_watts_per_port: null
+        shared_capacity_mbps: null
+        breakout: null
+      - id: fiber
+        count: 32
+        speeds_mbps: [1000, 10000, 40000, 100000]
+        media: fiber
+        poe_watts_per_port: null
+        shared_capacity_mbps: null
+        breakout: null
+    operating_modes:
+      - id: base
+        features: [routing, firewall, ips, vpn, nat, ecmp, high_availability, lacp]
+        throughput_mbps: 100000
+    reference_hints: []
+  - id: wan-edge
+    roles: [wan_edge]
+    relative_cost_tier: 2
+    features: [routing, ecmp]
+    poe_budget_watts: null
+    port_groups:
+      - id: copper
+        count: 48
+        speeds_mbps: [1000]
+        media: copper
+        poe_watts_per_port: null
+        shared_capacity_mbps: null
+        breakout: null
+      - id: fiber
+        count: 32
+        speeds_mbps: [1000, 10000, 40000, 100000]
+        media: fiber
+        poe_watts_per_port: null
+        shared_capacity_mbps: null
+        breakout: null
+    operating_modes:
+      - id: base
+        features: [routing, ecmp]
+        throughput_mbps: 100000
+    reference_hints: []

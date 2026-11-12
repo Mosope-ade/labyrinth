@@ -1,0 +1,28 @@
+name: Engine contracts
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        run: rustup toolchain install 1.95.0 --profile minimal --component clippy --component rustfmt
+      - name: Formatting
+        run: cargo +1.95.0 fmt --all -- --check
+      - name: Type and target checks
+        run: cargo +1.95.0 check --workspace --all-targets --locked
+      - name: Lints
+        run: cargo +1.95.0 clippy --workspace --all-targets --locked -- -D warnings
+      - name: Contract, catalog, schema and fixture tests
+        run: cargo +1.95.0 test --workspace --locked

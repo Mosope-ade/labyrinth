@@ -1,0 +1,89 @@
+{
+  "schema_version": "intent_v1",
+  "name": "Enterprise baseline",
+  "sites": [
+    {
+      "id": "hub",
+      "role": "hub",
+      "location": "lagos",
+      "isp_failure_domains": [
+        "isp-a",
+        "isp-b"
+      ],
+      "zones": [
+        {
+          "id": "staff",
+          "endpoint_count": 100,
+          "required_features": [
+            "routing",
+            "firewall"
+          ],
+          "poe_load_watts": null
+        }
+      ]
+    },
+    {
+      "id": "branch",
+      "role": "branch",
+      "location": "ibadan",
+      "isp_failure_domains": [
+        "isp-a",
+        "isp-b"
+      ],
+      "zones": [
+        {
+          "id": "guest",
+          "endpoint_count": 50,
+          "required_features": [
+            "routing"
+          ],
+          "poe_load_watts": null
+        }
+      ]
+    }
+  ],
+  "demands": [
+    {
+      "id": "staff-to-guest",
+      "from_zone": "staff",
+      "to_zone": "guest",
+      "peak_mbps": 100
+    }
+  ],
+  "policies": [
+    {
+      "id": "staff-guest-https",
+      "from_zone": "staff",
+      "to_zone": "guest",
+      "action": "allow",
+      "service": {
+        "protocol": "tcp",
+        "destination_ports": [
+          {
+            "start": 443,
+            "end": 443
+          }
+        ]
+      }
+    },
+    {
+      "id": "guest-staff-isolated",
+      "from_zone": "guest",
+      "to_zone": "staff",
+      "action": "deny",
+      "service": {
+        "protocol": "any",
+        "destination_ports": []
+      }
+    }
+  ],
+  "redundancy": "tier2_device",
+  "blueprint": null,
+  "growth_percent": null,
+  "spare_port_target_percent": null,
+  "ipv4_pool": null,
+  "excluded_ipv4": [],
+  "update": {
+    "mode": "stateless_redesign"
+  }
+}

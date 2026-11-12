@@ -1,0 +1,24 @@
+schema_version: catalog_v1
+version: 1.0.0
+archetypes:
+  - id: invalid-switch
+    roles: [access_switch]
+    relative_cost_tier: 1
+    features: [switching]
+    poe_budget_watts: null
+    port_groups:
+      - id: access
+        count: 0
+        speeds_mbps: [1000]
+        media: copper
+        poe_watts_per_port: null
+        shared_capacity_mbps: null
+        breakout: null
+    operating_modes:
+      - id: base
+        features: [switching]
+        throughput_mbps: 1000
+      - id: impossible
+        features: [switching]
+        throughput_mbps: 2000
+    reference_hints: []
