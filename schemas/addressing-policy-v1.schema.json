@@ -1,0 +1,78 @@
+{
+  "$defs": {
+    "VlanPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "excluded": {
+          "items": {
+            "format": "uint16",
+            "maximum": 65535,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "type": "array"
+        },
+        "first": {
+          "format": "uint16",
+          "maximum": 4094,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "last": {
+          "format": "uint16",
+          "maximum": 4094,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "reuse_across_sites": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "first",
+        "last",
+        "excluded",
+        "reuse_across_sites"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Defaults for the first blueprint, supplied explicitly to topology planning.",
+  "properties": {
+    "allocate_loopbacks": {
+      "type": "boolean"
+    },
+    "redundant_gateway_reservations": {
+      "format": "uint16",
+      "maximum": 65535,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "single_gateway_reservations": {
+      "format": "uint16",
+      "maximum": 65535,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "transit_prefix_len": {
+      "format": "uint8",
+      "maximum": 31,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "vlans": {
+      "$ref": "#/$defs/VlanPolicy"
+    }
+  },
+  "required": [
+    "single_gateway_reservations",
+    "redundant_gateway_reservations",
+    "transit_prefix_len",
+    "allocate_loopbacks",
+    "vlans"
+  ],
+  "title": "AddressingPolicy",
+  "type": "object"
+}

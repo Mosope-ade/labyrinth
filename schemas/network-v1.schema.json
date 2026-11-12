@@ -1,0 +1,895 @@
+{
+  "$defs": {
+    "AbstractRoute": {
+      "additionalProperties": false,
+      "properties": {
+        "destination": {
+          "$ref": "#/$defs/Ipv4Prefix"
+        },
+        "device": {
+          "$ref": "#/$defs/DeviceId"
+        },
+        "egress": {
+          "$ref": "#/$defs/InterfaceId"
+        },
+        "next_hop": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "device",
+        "destination",
+        "next_hop",
+        "egress"
+      ],
+      "type": "object"
+    },
+    "AddressAllocation": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/AllocationId"
+        },
+        "purpose": {
+          "$ref": "#/$defs/AllocationPurpose"
+        },
+        "required_hosts": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "reserved_hosts": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "subnet": {
+          "$ref": "#/$defs/Ipv4Prefix"
+        },
+        "zone": {
+          "$ref": "#/$defs/ZoneId"
+        }
+      },
+      "required": [
+        "id",
+        "zone",
+        "subnet",
+        "purpose",
+        "required_hosts",
+        "reserved_hosts"
+      ],
+      "type": "object"
+    },
+    "AllocationId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "AllocationPurpose": {
+      "enum": [
+        "endpoints",
+        "transit",
+        "loopback"
+      ],
+      "type": "string"
+    },
+    "ArchetypeId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "BundleId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "BundleKind": {
+      "enum": [
+        "lacp",
+        "ecmp"
+      ],
+      "type": "string"
+    },
+    "CatalogVersion": {
+      "additionalProperties": false,
+      "properties": {
+        "semantic_version": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "semantic_version",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "ComponentRef": {
+      "description": "Typed references keep a human explanation attached to the correct entity kind.",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/SiteId"
+            },
+            "type": {
+              "const": "site",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/ZoneId"
+            },
+            "type": {
+              "const": "zone",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/DeviceId"
+            },
+            "type": {
+              "const": "device",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/InterfaceId"
+            },
+            "type": {
+              "const": "interface",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/LinkId"
+            },
+            "type": {
+              "const": "link",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/DomainId"
+            },
+            "type": {
+              "const": "domain",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/AllocationId"
+            },
+            "type": {
+              "const": "allocation",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/BundleId"
+            },
+            "type": {
+              "const": "bundle",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/PolicyId"
+            },
+            "type": {
+              "const": "policy",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "DecisionId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "DesignDecision": {
+      "additionalProperties": false,
+      "properties": {
+        "component_ids": {
+          "items": {
+            "$ref": "#/$defs/ComponentRef"
+          },
+          "type": "array"
+        },
+        "id": {
+          "$ref": "#/$defs/DecisionId"
+        },
+        "overridable": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "rule_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "triggered_by": {
+          "$ref": "#/$defs/TriggerSource"
+        }
+      },
+      "required": [
+        "id",
+        "component_ids",
+        "reason",
+        "triggered_by",
+        "overridable"
+      ],
+      "type": "object"
+    },
+    "Device": {
+      "additionalProperties": false,
+      "properties": {
+        "archetype": {
+          "$ref": "#/$defs/ArchetypeId"
+        },
+        "failure_domains": {
+          "items": {
+            "$ref": "#/$defs/FailureDomainId"
+          },
+          "type": "array"
+        },
+        "id": {
+          "$ref": "#/$defs/DeviceId"
+        },
+        "interfaces": {
+          "items": {
+            "$ref": "#/$defs/Interface"
+          },
+          "type": "array"
+        },
+        "operating_mode": {
+          "$ref": "#/$defs/ModeId"
+        },
+        "role": {
+          "$ref": "#/$defs/DeviceRole"
+        },
+        "site": {
+          "$ref": "#/$defs/SiteId"
+        }
+      },
+      "required": [
+        "id",
+        "site",
+        "role",
+        "archetype",
+        "operating_mode",
+        "interfaces",
+        "failure_domains"
+      ],
+      "type": "object"
+    },
+    "DeviceId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "DeviceRole": {
+      "enum": [
+        "router",
+        "core_switch",
+        "distribution_switch",
+        "access_switch",
+        "firewall",
+        "wan_edge",
+        "host",
+        "access_point",
+        "external_network"
+      ],
+      "type": "string"
+    },
+    "DomainId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "FailureDomainId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "FlowPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/PolicyAction"
+        },
+        "from_zone": {
+          "$ref": "#/$defs/ZoneId"
+        },
+        "id": {
+          "$ref": "#/$defs/PolicyId"
+        },
+        "service": {
+          "$ref": "#/$defs/ServiceMatch"
+        },
+        "to_zone": {
+          "$ref": "#/$defs/ZoneId"
+        }
+      },
+      "required": [
+        "id",
+        "from_zone",
+        "to_zone",
+        "action",
+        "service"
+      ],
+      "type": "object"
+    },
+    "Interface": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/InterfaceId"
+        },
+        "kind": {
+          "$ref": "#/$defs/InterfaceKind"
+        },
+        "media": {
+          "$ref": "#/$defs/Media"
+        },
+        "port": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PortBinding"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "speed_mbps": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "media",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "InterfaceId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "InterfaceKind": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "address": {
+              "$ref": "#/$defs/Ipv4InterfaceAddress"
+            },
+            "type": {
+              "const": "routed",
+              "type": "string"
+            },
+            "zone": {
+              "$ref": "#/$defs/ZoneId"
+            }
+          },
+          "required": [
+            "type",
+            "zone",
+            "address"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "domain": {
+              "$ref": "#/$defs/DomainId"
+            },
+            "type": {
+              "const": "access",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "domain"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "domains": {
+              "items": {
+                "$ref": "#/$defs/DomainId"
+              },
+              "type": "array"
+            },
+            "type": {
+              "const": "trunk",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "domains"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "address": {
+              "$ref": "#/$defs/Ipv4InterfaceAddress"
+            },
+            "type": {
+              "const": "loopback",
+              "type": "string"
+            },
+            "zone": {
+              "$ref": "#/$defs/ZoneId"
+            }
+          },
+          "required": [
+            "type",
+            "zone",
+            "address"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "Ipv4InterfaceAddress": {
+      "description": "Host address with prefix. /31 and /32 retain their point-to-point/host semantics.",
+      "type": "string"
+    },
+    "Ipv4Prefix": {
+      "description": "Canonical IPv4 network CIDR; host bits are rejected, never silently discarded.",
+      "type": "string"
+    },
+    "Layer2Domain": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/DomainId"
+        },
+        "site": {
+          "$ref": "#/$defs/SiteId"
+        },
+        "vlan": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "zone": {
+          "$ref": "#/$defs/ZoneId"
+        }
+      },
+      "required": [
+        "id",
+        "site",
+        "zone",
+        "vlan"
+      ],
+      "type": "object"
+    },
+    "LinkBundle": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/BundleId"
+        },
+        "kind": {
+          "$ref": "#/$defs/BundleKind"
+        },
+        "links": {
+          "items": {
+            "$ref": "#/$defs/LinkId"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "links"
+      ],
+      "type": "object"
+    },
+    "LinkEndpoint": {
+      "additionalProperties": false,
+      "properties": {
+        "device": {
+          "$ref": "#/$defs/DeviceId"
+        },
+        "interface": {
+          "$ref": "#/$defs/InterfaceId"
+        }
+      },
+      "required": [
+        "device",
+        "interface"
+      ],
+      "type": "object"
+    },
+    "LinkId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "Media": {
+      "enum": [
+        "copper",
+        "fiber",
+        "virtual"
+      ],
+      "type": "string"
+    },
+    "ModeId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "NetworkSite": {
+      "additionalProperties": false,
+      "properties": {
+        "failure_domains": {
+          "items": {
+            "$ref": "#/$defs/FailureDomainId"
+          },
+          "type": "array"
+        },
+        "id": {
+          "$ref": "#/$defs/SiteId"
+        }
+      },
+      "required": [
+        "id",
+        "failure_domains"
+      ],
+      "type": "object"
+    },
+    "PhysicalLink": {
+      "additionalProperties": false,
+      "properties": {
+        "bandwidth_mbps": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "failure_domains": {
+          "items": {
+            "$ref": "#/$defs/FailureDomainId"
+          },
+          "type": "array"
+        },
+        "from": {
+          "$ref": "#/$defs/LinkEndpoint"
+        },
+        "id": {
+          "$ref": "#/$defs/LinkId"
+        },
+        "to": {
+          "$ref": "#/$defs/LinkEndpoint"
+        }
+      },
+      "required": [
+        "id",
+        "from",
+        "to",
+        "bandwidth_mbps",
+        "failure_domains"
+      ],
+      "type": "object"
+    },
+    "PolicyAction": {
+      "enum": [
+        "allow",
+        "deny"
+      ],
+      "type": "string"
+    },
+    "PolicyBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "device": {
+          "$ref": "#/$defs/DeviceId"
+        },
+        "ingress": {
+          "$ref": "#/$defs/InterfaceId"
+        },
+        "policy": {
+          "$ref": "#/$defs/FlowPolicy"
+        }
+      },
+      "required": [
+        "policy",
+        "device",
+        "ingress"
+      ],
+      "type": "object"
+    },
+    "PolicyId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "PortBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "group": {
+          "$ref": "#/$defs/PortGroupId"
+        },
+        "index": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "group",
+        "index"
+      ],
+      "type": "object"
+    },
+    "PortGroupId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "PortRange": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "start": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "type": "object"
+    },
+    "Protocol": {
+      "enum": [
+        "any",
+        "tcp",
+        "udp",
+        "icmp"
+      ],
+      "type": "string"
+    },
+    "SecurityZone": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/ZoneId"
+        },
+        "site": {
+          "$ref": "#/$defs/SiteId"
+        }
+      },
+      "required": [
+        "id",
+        "site"
+      ],
+      "type": "object"
+    },
+    "ServiceMatch": {
+      "additionalProperties": false,
+      "properties": {
+        "destination_ports": {
+          "items": {
+            "$ref": "#/$defs/PortRange"
+          },
+          "type": "array"
+        },
+        "protocol": {
+          "$ref": "#/$defs/Protocol"
+        }
+      },
+      "required": [
+        "protocol",
+        "destination_ports"
+      ],
+      "type": "object"
+    },
+    "SiteId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "TriggerSource": {
+      "enum": [
+        "user_intent",
+        "engine_default",
+        "blueprint",
+        "selection",
+        "policy",
+        "addressing"
+      ],
+      "type": "string"
+    },
+    "ZoneId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Untrusted complete draft. Structural validation does not grant verified status.",
+  "properties": {
+    "allocations": {
+      "items": {
+        "$ref": "#/$defs/AddressAllocation"
+      },
+      "type": "array"
+    },
+    "catalog_version": {
+      "$ref": "#/$defs/CatalogVersion"
+    },
+    "decisions": {
+      "items": {
+        "$ref": "#/$defs/DesignDecision"
+      },
+      "type": "array"
+    },
+    "devices": {
+      "items": {
+        "$ref": "#/$defs/Device"
+      },
+      "type": "array"
+    },
+    "domains": {
+      "items": {
+        "$ref": "#/$defs/Layer2Domain"
+      },
+      "type": "array"
+    },
+    "link_bundles": {
+      "items": {
+        "$ref": "#/$defs/LinkBundle"
+      },
+      "type": "array"
+    },
+    "links": {
+      "items": {
+        "$ref": "#/$defs/PhysicalLink"
+      },
+      "type": "array"
+    },
+    "policies": {
+      "items": {
+        "$ref": "#/$defs/PolicyBinding"
+      },
+      "type": "array"
+    },
+    "routes": {
+      "items": {
+        "$ref": "#/$defs/AbstractRoute"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "sites": {
+      "items": {
+        "$ref": "#/$defs/NetworkSite"
+      },
+      "type": "array"
+    },
+    "zones": {
+      "items": {
+        "$ref": "#/$defs/SecurityZone"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "catalog_version",
+    "sites",
+    "zones",
+    "devices",
+    "links",
+    "link_bundles",
+    "domains",
+    "allocations",
+    "routes",
+    "policies",
+    "decisions"
+  ],
+  "title": "NetworkDraft",
+  "type": "object"
+}

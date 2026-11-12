@@ -1,31 +1,54 @@
-# Rust
-/target/
+# Rust build outputs (keep Cargo.lock versioned)
+target/
 **/*.rs.bk
 
-# Node
+# Frontend dependencies, builds and caches
 node_modules/
-.next/
-out/
 dist/
+.vite/
 .turbo/
+*.tsbuildinfo
 
-# Environment
+# Local environment and credentials (keep documented templates)
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
 
-# Editor
+# Local runtime data, logs and temporary files
+/.local/
+/tmp/
+/logs/
+*.log
+*.pid
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Test and coverage outputs
+/coverage/
+/llvm-cov/
+*.profraw
+*.profdata
+playwright-report/
+test-results/
+
+# Editor and OS files
 .idea/
 .vscode/
 *.swp
 *.swo
-
-# OS
+*~
 .DS_Store
 Thumbs.db
 
-# Tauri
-netgen-desktop/src-tauri/target/
-
+# Existing local-only notes
 CLAUDE.md
 NEWPLAN.md

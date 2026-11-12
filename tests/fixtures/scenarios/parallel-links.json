@@ -1,0 +1,137 @@
+{
+  "schema_version": "network_v1",
+  "catalog_version": {
+    "semantic_version": "1.0.0",
+    "sha256": "8b5aabe031399ada7827f835c83532635886c52dd39967e1e4283e643f35d570"
+  },
+  "sites": [
+    {
+      "id": "site-a",
+      "failure_domains": [
+        "location-a"
+      ]
+    }
+  ],
+  "zones": [
+    {
+      "id": "staff",
+      "site": "site-a"
+    },
+    {
+      "id": "management",
+      "site": "site-a"
+    }
+  ],
+  "domains": [],
+  "devices": [
+    {
+      "id": "switch-a",
+      "site": "site-a",
+      "role": "access_switch",
+      "archetype": "access-switch",
+      "operating_mode": "base",
+      "interfaces": [
+        {
+          "id": "switch-a-p0",
+          "port": {
+            "group": "access",
+            "index": 0
+          },
+          "speed_mbps": 1000,
+          "media": "copper",
+          "kind": {
+            "type": "routed",
+            "zone": "staff",
+            "address": "10.0.0.1/30"
+          }
+        },
+        {
+          "id": "switch-a-p1",
+          "port": {
+            "group": "access",
+            "index": 1
+          },
+          "speed_mbps": 1000,
+          "media": "copper",
+          "kind": {
+            "type": "routed",
+            "zone": "management",
+            "address": "10.0.1.1/30"
+          }
+        }
+      ],
+      "failure_domains": []
+    },
+    {
+      "id": "switch-b",
+      "site": "site-a",
+      "role": "access_switch",
+      "archetype": "access-switch",
+      "operating_mode": "base",
+      "interfaces": [
+        {
+          "id": "switch-b-p0",
+          "port": {
+            "group": "access",
+            "index": 0
+          },
+          "speed_mbps": 1000,
+          "media": "copper",
+          "kind": {
+            "type": "routed",
+            "zone": "staff",
+            "address": "10.0.0.2/30"
+          }
+        },
+        {
+          "id": "switch-b-p1",
+          "port": {
+            "group": "access",
+            "index": 1
+          },
+          "speed_mbps": 1000,
+          "media": "copper",
+          "kind": {
+            "type": "routed",
+            "zone": "management",
+            "address": "10.0.1.2/30"
+          }
+        }
+      ],
+      "failure_domains": []
+    }
+  ],
+  "links": [
+    {
+      "id": "uplink-a",
+      "from": {
+        "device": "switch-a",
+        "interface": "switch-a-p0"
+      },
+      "to": {
+        "device": "switch-b",
+        "interface": "switch-b-p0"
+      },
+      "bandwidth_mbps": 1000,
+      "failure_domains": []
+    },
+    {
+      "id": "uplink-b",
+      "from": {
+        "device": "switch-a",
+        "interface": "switch-a-p1"
+      },
+      "to": {
+        "device": "switch-b",
+        "interface": "switch-b-p1"
+      },
+      "bandwidth_mbps": 1000,
+      "failure_domains": []
+    }
+  ],
+  "link_bundles": [],
+  "allocations": [],
+  "routes": [],
+  "policies": [],
+  "decisions": []
+}

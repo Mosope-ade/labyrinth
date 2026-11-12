@@ -1,0 +1,13 @@
+[package]
+name = "labyrinth-worker"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+publish.workspace = true
+description = "Generation job execution boundary"
+
+[lints]
+workspace = true
+
+[dependencies]
+labyrinth-engine = { path = "../engine" }

@@ -1,0 +1,519 @@
+{
+  "$defs": {
+    "AllocationPin": {
+      "additionalProperties": false,
+      "properties": {
+        "subnet": {
+          "$ref": "#/$defs/Ipv4Prefix"
+        },
+        "zone": {
+          "$ref": "#/$defs/ZoneId"
+        }
+      },
+      "required": [
+        "zone",
+        "subnet"
+      ],
+      "type": "object"
+    },
+    "ArchetypeId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "BlueprintChoice": {
+      "enum": [
+        "automatic",
+        "hub_spoke",
+        "three_tier_campus",
+        "spine_leaf"
+      ],
+      "type": "string"
+    },
+    "CorePin": {
+      "additionalProperties": false,
+      "properties": {
+        "archetype": {
+          "$ref": "#/$defs/ArchetypeId"
+        },
+        "device": {
+          "$ref": "#/$defs/DeviceId"
+        },
+        "site": {
+          "$ref": "#/$defs/SiteId"
+        }
+      },
+      "required": [
+        "device",
+        "site",
+        "archetype"
+      ],
+      "type": "object"
+    },
+    "DeviceId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "EndpointAttachment": {
+      "additionalProperties": false,
+      "description": "Per-endpoint physical attachment. Missing attachment defaults to 1 Gbps copper.",
+      "properties": {
+        "media": {
+          "$ref": "#/$defs/Media"
+        },
+        "poe_watts_per_endpoint": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "speed_mbps": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "speed_mbps",
+        "media"
+      ],
+      "type": "object"
+    },
+    "FailureDomainId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "Feature": {
+      "enum": [
+        "routing",
+        "switching",
+        "vlan",
+        "ospf",
+        "bgp",
+        "static_routing",
+        "firewall",
+        "ips",
+        "vpn",
+        "nat",
+        "lacp",
+        "ecmp",
+        "poe",
+        "high_availability",
+        "rapid_spanning_tree"
+      ],
+      "type": "string"
+    },
+    "FlowId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "FlowPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/PolicyAction"
+        },
+        "from_zone": {
+          "$ref": "#/$defs/ZoneId"
+        },
+        "id": {
+          "$ref": "#/$defs/PolicyId"
+        },
+        "service": {
+          "$ref": "#/$defs/ServiceMatch"
+        },
+        "to_zone": {
+          "$ref": "#/$defs/ZoneId"
+        }
+      },
+      "required": [
+        "id",
+        "from_zone",
+        "to_zone",
+        "action",
+        "service"
+      ],
+      "type": "object"
+    },
+    "Ipv4Prefix": {
+      "description": "Canonical IPv4 network CIDR; host bits are rejected, never silently discarded.",
+      "type": "string"
+    },
+    "Media": {
+      "enum": [
+        "copper",
+        "fiber",
+        "virtual"
+      ],
+      "type": "string"
+    },
+    "PolicyAction": {
+      "enum": [
+        "allow",
+        "deny"
+      ],
+      "type": "string"
+    },
+    "PolicyId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "PortRange": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "start": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "type": "object"
+    },
+    "Protocol": {
+      "enum": [
+        "any",
+        "tcp",
+        "udp",
+        "icmp"
+      ],
+      "type": "string"
+    },
+    "RedundancyTier": {
+      "enum": [
+        "tier0_none",
+        "tier1_link",
+        "tier2_device",
+        "tier3_site"
+      ],
+      "type": "string"
+    },
+    "RevisionId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "ServiceMatch": {
+      "additionalProperties": false,
+      "properties": {
+        "destination_ports": {
+          "items": {
+            "$ref": "#/$defs/PortRange"
+          },
+          "type": "array"
+        },
+        "protocol": {
+          "$ref": "#/$defs/Protocol"
+        }
+      },
+      "required": [
+        "protocol",
+        "destination_ports"
+      ],
+      "type": "object"
+    },
+    "SiteId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "SiteRequirement": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/SiteId"
+        },
+        "isp_failure_domains": {
+          "items": {
+            "$ref": "#/$defs/FailureDomainId"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "location": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "role": {
+          "$ref": "#/$defs/SiteRole"
+        },
+        "zones": {
+          "items": {
+            "$ref": "#/$defs/ZoneRequirement"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "role"
+      ],
+      "type": "object"
+    },
+    "SiteRole": {
+      "enum": [
+        "hub",
+        "branch",
+        "campus",
+        "data_center",
+        "other"
+      ],
+      "type": "string"
+    },
+    "TrafficDemand": {
+      "additionalProperties": false,
+      "properties": {
+        "from_zone": {
+          "$ref": "#/$defs/ZoneId"
+        },
+        "id": {
+          "$ref": "#/$defs/FlowId"
+        },
+        "peak_mbps": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "to_zone": {
+          "$ref": "#/$defs/ZoneId"
+        }
+      },
+      "required": [
+        "id",
+        "from_zone",
+        "to_zone",
+        "peak_mbps"
+      ],
+      "type": "object"
+    },
+    "UpdateMode": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "stateless_redesign",
+              "type": "string"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "base_revision": {
+              "$ref": "#/$defs/RevisionId"
+            },
+            "core_pins": {
+              "items": {
+                "$ref": "#/$defs/CorePin"
+              },
+              "type": "array"
+            },
+            "ipam_pins": {
+              "items": {
+                "$ref": "#/$defs/AllocationPin"
+              },
+              "type": "array"
+            },
+            "mode": {
+              "const": "incremental_update",
+              "type": "string"
+            }
+          },
+          "required": [
+            "mode",
+            "base_revision",
+            "ipam_pins",
+            "core_pins"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "ZoneId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "ZoneRequirement": {
+      "additionalProperties": false,
+      "properties": {
+        "endpoint_attachment": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EndpointAttachment"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "endpoint_count": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/ZoneId"
+        },
+        "poe_load_watts": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "required_features": {
+          "items": {
+            "$ref": "#/$defs/Feature"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "blueprint": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/BlueprintChoice"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "demands": {
+      "items": {
+        "$ref": "#/$defs/TrafficDemand"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "excluded_ipv4": {
+      "default": null,
+      "items": {
+        "$ref": "#/$defs/Ipv4Prefix"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "growth_percent": {
+      "format": "uint8",
+      "maximum": 255,
+      "minimum": 0,
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "ipv4_pool": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Ipv4Prefix"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "policies": {
+      "items": {
+        "$ref": "#/$defs/FlowPolicy"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "redundancy": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RedundancyTier"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "sites": {
+      "items": {
+        "$ref": "#/$defs/SiteRequirement"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "spare_port_target_percent": {
+      "format": "uint8",
+      "maximum": 255,
+      "minimum": 0,
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "update": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/UpdateMode"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "schema_version"
+  ],
+  "title": "PartialIntent",
+  "type": "object"
+}

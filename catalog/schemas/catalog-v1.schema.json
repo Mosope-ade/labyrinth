@@ -1,0 +1,277 @@
+{
+  "$defs": {
+    "Archetype": {
+      "additionalProperties": false,
+      "properties": {
+        "features": {
+          "items": {
+            "$ref": "#/$defs/Feature"
+          },
+          "maxItems": 32,
+          "type": "array"
+        },
+        "id": {
+          "$ref": "#/$defs/ArchetypeId"
+        },
+        "operating_modes": {
+          "items": {
+            "$ref": "#/$defs/OperatingMode"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "type": "array"
+        },
+        "poe_budget_watts": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "port_groups": {
+          "items": {
+            "$ref": "#/$defs/PortGroup"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "type": "array"
+        },
+        "reference_hints": {
+          "items": {
+            "$ref": "#/$defs/ReferenceHint"
+          },
+          "maxItems": 32,
+          "type": "array"
+        },
+        "relative_cost_tier": {
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "roles": {
+          "items": {
+            "$ref": "#/$defs/DeviceRole"
+          },
+          "maxItems": 9,
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "roles",
+        "relative_cost_tier",
+        "features",
+        "port_groups",
+        "operating_modes",
+        "reference_hints"
+      ],
+      "type": "object"
+    },
+    "ArchetypeId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "Breakout": {
+      "additionalProperties": false,
+      "properties": {
+        "child_speed_mbps": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "children_per_port": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "children_per_port",
+        "child_speed_mbps"
+      ],
+      "type": "object"
+    },
+    "DeviceRole": {
+      "enum": [
+        "router",
+        "core_switch",
+        "distribution_switch",
+        "access_switch",
+        "firewall",
+        "wan_edge",
+        "host",
+        "access_point",
+        "external_network"
+      ],
+      "type": "string"
+    },
+    "Feature": {
+      "enum": [
+        "routing",
+        "switching",
+        "vlan",
+        "ospf",
+        "bgp",
+        "static_routing",
+        "firewall",
+        "ips",
+        "vpn",
+        "nat",
+        "lacp",
+        "ecmp",
+        "poe",
+        "high_availability",
+        "rapid_spanning_tree"
+      ],
+      "type": "string"
+    },
+    "Media": {
+      "enum": [
+        "copper",
+        "fiber",
+        "virtual"
+      ],
+      "type": "string"
+    },
+    "ModeId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "OperatingMode": {
+      "additionalProperties": false,
+      "properties": {
+        "features": {
+          "items": {
+            "$ref": "#/$defs/Feature"
+          },
+          "maxItems": 32,
+          "type": "array"
+        },
+        "id": {
+          "$ref": "#/$defs/ModeId"
+        },
+        "throughput_mbps": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "features"
+      ],
+      "type": "object"
+    },
+    "PortGroup": {
+      "additionalProperties": false,
+      "properties": {
+        "breakout": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Breakout"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "count": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "id": {
+          "$ref": "#/$defs/PortGroupId"
+        },
+        "media": {
+          "$ref": "#/$defs/Media"
+        },
+        "poe_watts_per_port": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "shared_capacity_mbps": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "speeds_mbps": {
+          "items": {
+            "format": "uint64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 16,
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "count",
+        "speeds_mbps",
+        "media"
+      ],
+      "type": "object"
+    },
+    "PortGroupId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "ReferenceHint": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "maxLength": 256,
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "description"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "archetypes": {
+      "items": {
+        "$ref": "#/$defs/Archetype"
+      },
+      "maxItems": 256,
+      "minItems": 1,
+      "type": "array"
+    },
+    "schema_version": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "version",
+    "archetypes"
+  ],
+  "title": "CatalogBundle",
+  "type": "object"
+}
