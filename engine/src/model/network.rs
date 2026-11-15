@@ -22,6 +22,16 @@ pub struct NetworkDraft {
     pub routes: Vec<AbstractRoute>,
     pub policies: Vec<PolicyBinding>,
     pub decisions: Vec<DesignDecision>,
+    #[serde(default)]
+    pub layer2_forwarding: Vec<Layer2Forwarding>,
+    #[serde(default)]
+    pub gateways: Vec<GatewayOwnership>,
+    #[serde(default)]
+    pub wan_connections: Vec<WanConnection>,
+    #[serde(default)]
+    pub forwarding_routes: Vec<ForwardingEntry>,
+    #[serde(default)]
+    pub traffic_paths: Vec<FlowPath>,
 }
 impl NetworkDraft {
     pub fn validate(self, catalog: &CatalogSnapshot) -> Result<ValidatedNetwork, ValidationErrors> {
@@ -92,6 +102,22 @@ pub enum InterfaceKind {
     },
     Trunk {
         domains: Vec<DomainId>,
+    },
+    /// Physical firewall attachment to an Ethernet domain, without bridging.
+    Attachment {
+        domain: DomainId,
+    },
+    /// Logical routed gateway over its physical Ethernet attachment/bundle.
+    Gateway {
+        domain: DomainId,
+        zone: ZoneId,
+        address: Ipv4InterfaceAddress,
+    },
+    HaControl {
+        peer: DeviceId,
+    },
+    Provider {
+        failure_domain: FailureDomainId,
     },
     Loopback {
         zone: ZoneId,

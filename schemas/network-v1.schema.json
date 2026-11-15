@@ -370,6 +370,73 @@
       "pattern": "^[a-z][a-z0-9_-]{0,63}$",
       "type": "string"
     },
+    "FlowId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "FlowPath": {
+      "additionalProperties": false,
+      "properties": {
+        "adjacencies": {
+          "items": {
+            "$ref": "#/$defs/ForwardingAdjacency"
+          },
+          "type": "array"
+        },
+        "cohort": {
+          "format": "uint16",
+          "maximum": 65535,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "devices": {
+          "items": {
+            "$ref": "#/$defs/DeviceId"
+          },
+          "type": "array"
+        },
+        "flow": {
+          "$ref": "#/$defs/FlowId"
+        },
+        "from_zone": {
+          "$ref": "#/$defs/ZoneId"
+        },
+        "peak_mbps": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "session_peak_mbps": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "sessions": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "steered": {
+          "type": "boolean"
+        },
+        "to_zone": {
+          "$ref": "#/$defs/ZoneId"
+        }
+      },
+      "required": [
+        "flow",
+        "from_zone",
+        "to_zone",
+        "cohort",
+        "sessions",
+        "session_peak_mbps",
+        "steered",
+        "devices",
+        "adjacencies",
+        "peak_mbps"
+      ],
+      "type": "object"
+    },
     "FlowPolicy": {
       "additionalProperties": false,
       "properties": {
@@ -395,6 +462,153 @@
         "to_zone",
         "action",
         "service"
+      ],
+      "type": "object"
+    },
+    "ForwardingAdjacency": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/LinkId"
+            },
+            "type": {
+              "const": "internal",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/LinkId"
+            },
+            "type": {
+              "const": "wan",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "$ref": "#/$defs/InterfaceId"
+            },
+            "type": {
+              "const": "local_gateway",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "ForwardingEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "destination": {
+          "$ref": "#/$defs/Ipv4Prefix"
+        },
+        "device": {
+          "$ref": "#/$defs/DeviceId"
+        },
+        "next_hop": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "via": {
+          "$ref": "#/$defs/ForwardingAdjacency"
+        }
+      },
+      "required": [
+        "device",
+        "destination",
+        "via"
+      ],
+      "type": "object"
+    },
+    "GatewayMember": {
+      "additionalProperties": false,
+      "properties": {
+        "device": {
+          "$ref": "#/$defs/DeviceId"
+        },
+        "interface": {
+          "$ref": "#/$defs/InterfaceId"
+        }
+      },
+      "required": [
+        "device",
+        "interface"
+      ],
+      "type": "object"
+    },
+    "GatewayOwnership": {
+      "additionalProperties": false,
+      "properties": {
+        "domain": {
+          "$ref": "#/$defs/DomainId"
+        },
+        "members": {
+          "items": {
+            "$ref": "#/$defs/GatewayMember"
+          },
+          "type": "array"
+        },
+        "owner": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sync_links": {
+          "items": {
+            "$ref": "#/$defs/LinkId"
+          },
+          "type": "array"
+        },
+        "virtual_address": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Ipv4InterfaceAddress"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "domain",
+        "members",
+        "sync_links"
       ],
       "type": "object"
     },
@@ -502,6 +716,84 @@
         },
         {
           "additionalProperties": false,
+          "description": "Physical firewall attachment to an Ethernet domain, without bridging.",
+          "properties": {
+            "domain": {
+              "$ref": "#/$defs/DomainId"
+            },
+            "type": {
+              "const": "attachment",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "domain"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "description": "Logical routed gateway over its physical Ethernet attachment/bundle.",
+          "properties": {
+            "address": {
+              "$ref": "#/$defs/Ipv4InterfaceAddress"
+            },
+            "domain": {
+              "$ref": "#/$defs/DomainId"
+            },
+            "type": {
+              "const": "gateway",
+              "type": "string"
+            },
+            "zone": {
+              "$ref": "#/$defs/ZoneId"
+            }
+          },
+          "required": [
+            "type",
+            "domain",
+            "zone",
+            "address"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "peer": {
+              "$ref": "#/$defs/DeviceId"
+            },
+            "type": {
+              "const": "ha_control",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "peer"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "failure_domain": {
+              "$ref": "#/$defs/FailureDomainId"
+            },
+            "type": {
+              "const": "provider",
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "failure_domain"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
           "properties": {
             "address": {
               "$ref": "#/$defs/Ipv4InterfaceAddress"
@@ -555,6 +847,49 @@
         "site",
         "zone",
         "vlan"
+      ],
+      "type": "object"
+    },
+    "Layer2Forwarding": {
+      "additionalProperties": false,
+      "properties": {
+        "blocked": {
+          "items": {
+            "$ref": "#/$defs/LinkId"
+          },
+          "type": "array"
+        },
+        "domain": {
+          "$ref": "#/$defs/DomainId"
+        },
+        "forwarding": {
+          "items": {
+            "$ref": "#/$defs/LinkId"
+          },
+          "type": "array"
+        },
+        "root": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/DeviceId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unreachable": {
+          "items": {
+            "$ref": "#/$defs/DeviceId"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "domain",
+        "forwarding",
+        "blocked",
+        "unreachable"
       ],
       "type": "object"
     },
@@ -800,6 +1135,37 @@
       ],
       "type": "string"
     },
+    "WanConnection": {
+      "additionalProperties": false,
+      "description": "Logical transport over explicitly declared, reciprocal WAN services. Not a cable.",
+      "properties": {
+        "bandwidth_mbps": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "from": {
+          "$ref": "#/$defs/LinkEndpoint"
+        },
+        "id": {
+          "$ref": "#/$defs/LinkId"
+        },
+        "provider_failure_domain": {
+          "$ref": "#/$defs/FailureDomainId"
+        },
+        "to": {
+          "$ref": "#/$defs/LinkEndpoint"
+        }
+      },
+      "required": [
+        "id",
+        "from",
+        "to",
+        "provider_failure_domain",
+        "bandwidth_mbps"
+      ],
+      "type": "object"
+    },
     "ZoneId": {
       "pattern": "^[a-z][a-z0-9_-]{0,63}$",
       "type": "string"
@@ -836,6 +1202,27 @@
       },
       "type": "array"
     },
+    "forwarding_routes": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ForwardingEntry"
+      },
+      "type": "array"
+    },
+    "gateways": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/GatewayOwnership"
+      },
+      "type": "array"
+    },
+    "layer2_forwarding": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Layer2Forwarding"
+      },
+      "type": "array"
+    },
     "link_bundles": {
       "items": {
         "$ref": "#/$defs/LinkBundle"
@@ -866,6 +1253,20 @@
     "sites": {
       "items": {
         "$ref": "#/$defs/NetworkSite"
+      },
+      "type": "array"
+    },
+    "traffic_paths": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/FlowPath"
+      },
+      "type": "array"
+    },
+    "wan_connections": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/WanConnection"
       },
       "type": "array"
     },

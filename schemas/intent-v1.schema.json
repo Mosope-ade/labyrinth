@@ -101,7 +101,8 @@
         "ecmp",
         "poe",
         "high_availability",
-        "rapid_spanning_tree"
+        "rapid_spanning_tree",
+        "session_steering"
       ],
       "type": "string"
     },
@@ -223,6 +224,33 @@
       ],
       "type": "object"
     },
+    "SessionCohort": {
+      "additionalProperties": false,
+      "properties": {
+        "session_peak_mbps": {
+          "format": "uint64",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "simultaneous_sessions": {
+          "format": "uint32",
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "session_peak_mbps",
+        "simultaneous_sessions"
+      ],
+      "type": "object"
+    },
+    "SessionGrowth": {
+      "enum": [
+        "rates",
+        "concurrency"
+      ],
+      "type": "string"
+    },
     "SiteId": {
       "pattern": "^[a-z][a-z0-9_-]{0,63}$",
       "type": "string"
@@ -280,6 +308,16 @@
     "TrafficDemand": {
       "additionalProperties": false,
       "properties": {
+        "distribution": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TrafficDistribution"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "from_zone": {
           "$ref": "#/$defs/ZoneId"
         },
@@ -302,6 +340,56 @@
         "peak_mbps"
       ],
       "type": "object"
+    },
+    "TrafficDistribution": {
+      "description": "Session cohorts are simultaneous upper-bound reservations, not average rates.\nSessions remain indivisible even when a demand may use multiple paths.",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "const": "single_path",
+              "type": "string"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "cohorts": {
+              "items": {
+                "$ref": "#/$defs/SessionCohort"
+              },
+              "maxItems": 64,
+              "minItems": 1,
+              "type": "array"
+            },
+            "growth": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/SessionGrowth"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "mode": {
+              "const": "sessions",
+              "type": "string"
+            }
+          },
+          "required": [
+            "mode",
+            "cohorts"
+          ],
+          "type": "object"
+        }
+      ]
     },
     "UpdateMode": {
       "oneOf": [
@@ -350,6 +438,37 @@
           "type": "object"
         }
       ]
+    },
+    "WanService": {
+      "additionalProperties": false,
+      "description": "Explicit confirmed attachment to an abstract WAN service. Matching provider\nnames alone never imply connectivity. Each connected peer must reciprocate.",
+      "properties": {
+        "committed_bandwidth_mbps": {
+          "format": "uint64",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "connected_sites": {
+          "items": {
+            "$ref": "#/$defs/SiteId"
+          },
+          "maxItems": 63,
+          "type": "array"
+        },
+        "provider_failure_domain": {
+          "$ref": "#/$defs/FailureDomainId"
+        },
+        "site": {
+          "$ref": "#/$defs/SiteId"
+        }
+      },
+      "required": [
+        "site",
+        "provider_failure_domain",
+        "committed_bandwidth_mbps",
+        "connected_sites"
+      ],
+      "type": "object"
     },
     "ZoneId": {
       "pattern": "^[a-z][a-z0-9_-]{0,63}$",
@@ -508,6 +627,15 @@
         {
           "type": "null"
         }
+      ]
+    },
+    "wan_services": {
+      "items": {
+        "$ref": "#/$defs/WanService"
+      },
+      "type": [
+        "array",
+        "null"
       ]
     }
   },

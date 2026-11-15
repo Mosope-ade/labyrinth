@@ -1,0 +1,68 @@
+{
+  "$defs": {
+    "DeviceId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    },
+    "RoutingLimits": {
+      "additionalProperties": false,
+      "properties": {
+        "max_paths_per_demand": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_search_states": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "timeout_ms": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_search_states",
+        "max_paths_per_demand",
+        "timeout_ms"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "preferred_owners": {
+      "additionalProperties": false,
+      "default": {},
+      "patternProperties": {
+        "^[a-z][a-z0-9_-]{0,63}$": {
+          "$ref": "#/$defs/DeviceId"
+        }
+      },
+      "type": "object"
+    },
+    "preferred_roots": {
+      "additionalProperties": false,
+      "default": {},
+      "patternProperties": {
+        "^[a-z][a-z0-9_-]{0,63}$": {
+          "$ref": "#/$defs/DeviceId"
+        }
+      },
+      "type": "object"
+    },
+    "routing_limits": {
+      "$ref": "#/$defs/RoutingLimits",
+      "default": {
+        "max_paths_per_demand": 64,
+        "max_search_states": 100000,
+        "timeout_ms": 15000
+      }
+    }
+  },
+  "title": "LogicalPolicy",
+  "type": "object"
+}

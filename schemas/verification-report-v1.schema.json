@@ -1,0 +1,161 @@
+{
+  "$defs": {
+    "Counterexample": {
+      "additionalProperties": false,
+      "properties": {
+        "available": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "code": {
+          "type": "string"
+        },
+        "component": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        },
+        "required": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "code",
+        "component",
+        "detail"
+      ],
+      "type": "object"
+    },
+    "PassEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "checked": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "counterexamples": {
+          "items": {
+            "$ref": "#/$defs/Counterexample"
+          },
+          "type": "array"
+        },
+        "kind": {
+          "$ref": "#/$defs/PassKind"
+        },
+        "passed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "passed",
+        "checked",
+        "counterexamples"
+      ],
+      "type": "object"
+    },
+    "PassKind": {
+      "enum": [
+        "structural",
+        "addressing",
+        "routing",
+        "security",
+        "resilience"
+      ],
+      "type": "string"
+    },
+    "ScenarioEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "counterexamples": {
+          "items": {
+            "$ref": "#/$defs/Counterexample"
+          },
+          "type": "array"
+        },
+        "excluded_demands": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "name": {
+          "type": "string"
+        },
+        "passed": {
+          "type": "boolean"
+        },
+        "protected_demands": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "name",
+        "passed",
+        "protected_demands",
+        "excluded_demands",
+        "counterexamples"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "assumptions": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "exclusions": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "passes": {
+      "items": {
+        "$ref": "#/$defs/PassEvidence"
+      },
+      "type": "array"
+    },
+    "protected_set": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "rules_version": {
+      "type": "string"
+    },
+    "scenarios": {
+      "items": {
+        "$ref": "#/$defs/ScenarioEvidence"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "rules_version",
+    "passes",
+    "scenarios",
+    "protected_set",
+    "exclusions",
+    "assumptions"
+  ],
+  "title": "VerificationReport",
+  "type": "object"
+}

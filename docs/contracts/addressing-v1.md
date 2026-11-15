@@ -63,7 +63,7 @@ Default first hub-spoke adapter:
 
 - One endpoint subnet/VLAN per site security zone; all access partitions share it.
 - Tier0/1 reserve one gateway address; Tier2/3 reserve three (two firewall addresses
-  and a shared virtual gateway). These are reservations, not implemented HA ownership.
+  and a shared virtual gateway). These reservations are consumed by the separate HA ownership stage.
 - Gateway reservation counts are configurable positive u16 values; the current HA
   adapter requires at least three reservations.
 - Routed internal links request /31s; `transit_prefix_len` can choose a larger subnet
@@ -92,13 +92,12 @@ provider reservations do not fabricate remote devices, carrier paths or provider
 
 Blueprint-declared L2 links and firewall HA-control cables are excluded from ordinary
 routed transit allocation. Other current blueprint links receive transit allocations;
-loopbacks and endpoint/gateway ranges are recorded separately. Logical
-L2 aggregation, HA gateway ownership, loop prevention, routing/policy synthesis and
-provider connectivity remain to be resolved before canonical network assembly.
+loopbacks and endpoint/gateway ranges are recorded separately. The separate canonical assembly stage resolves L2 aggregation, HA ownership,
+loop prevention and routing/policy synthesis; see [core contract](core-v1.md).
 The user selected zone distribution switches for shared-VLAN aggregation. Blueprint
 rules v2 implement that role layer, LACP/RSTP capability requirements, dedicated
-firewall HA sync links and explicit L2/control-link classification. Active/blocked
-L2 forwarding, bundle realization and HA state/ownership remain future work. Physical
+firewall HA sync links and explicit L2/control-link classification. Active/blocked L2 forwarding, bundle realization and HA state/ownership are
+implemented in the subsequent stage. Physical
 cables and protocol capabilities alone do not establish those proofs; this intermediate
 output is intentionally not export-eligible.
 
@@ -118,3 +117,9 @@ It is developer tooling, not an offline product CLI. Tests cover explicit polici
 exact catalog port bindings, no second growth, deterministic ordering, pin conflicts,
 nested exclusions, fragmented/full pools, VLAN scopes, /31-/32 semantics, full IPv4
 boundaries and comparison against an independent small first-fit reference model.
+
+## Subsequent logical stage
+
+[logical-v1](logical-v1.md) now defines the separately implemented L2/HA and canonical
+assembly stage. Allocation remains an intermediate boundary; it does not itself grant
+those semantics. Blueprint rules v3 supersede v2's single HA-control cable with two.

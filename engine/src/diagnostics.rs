@@ -88,3 +88,13 @@ pub(crate) fn decode_json<T: serde::de::DeserializeOwned>(
     }
     serde_json::from_str(input).map_err(JsonInputError::Parse)
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct Counterexample {
+    pub code: String,
+    pub component: String,
+    pub detail: String,
+    pub required: Option<u64>,
+    pub available: Option<u64>,
+}

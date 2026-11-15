@@ -20,6 +20,8 @@ pub struct DeviceRequirement {
     pub peak_mbps: u64,
     pub poe_watts: Option<u64>,
     pub pinned_archetype: Option<ArchetypeId>,
+    #[serde(default)]
+    pub pinned_mode: Option<ModeId>,
     pub ports: Vec<PortDemand>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema)]
@@ -68,6 +70,7 @@ pub struct CandidateSet {
 pub enum SelectionError {
     InvalidRequirement(String),
     ArithmeticOverflow,
+    Timeout,
     UnsupportedBlueprint(String),
     ClarificationRequired(String),
     PinConflict(String),

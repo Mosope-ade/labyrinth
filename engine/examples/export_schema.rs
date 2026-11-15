@@ -8,12 +8,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("addressing-policy") => serde_json::to_value(schemars::schema_for!(
             labyrinth_engine::topology::AddressingPolicy
         ))?,
+        Some("logical-policy") => serde_json::to_value(schemars::schema_for!(
+            labyrinth_engine::topology::LogicalPolicy
+        ))?,
+        Some("generation-options") => serde_json::to_value(schemars::schema_for!(
+            labyrinth_engine::artifacts::GenerationOptions
+        ))?,
+        Some("verification-report") => serde_json::to_value(schemars::schema_for!(
+            labyrinth_engine::verification::VerificationReport
+        ))?,
+        Some("package-manifest") => serde_json::to_value(schemars::schema_for!(
+            labyrinth_engine::artifacts::PackageManifest
+        ))?,
+        Some("generation-error") => serde_json::to_value(schemars::schema_for!(
+            labyrinth_engine::artifacts::GenerationError
+        ))?,
         Some("catalog-version") => serde_json::to_value(
             catalog::load_yaml(include_str!("../../catalog/archetypes/reference.yaml"))?.version(),
         )?,
         _ => {
             return Err(
-                "usage: export_schema <catalog|intent|network|addressing-policy|catalog-version>"
+                "usage: export_schema <catalog|intent|network|addressing-policy|logical-policy|generation-options|verification-report|package-manifest|generation-error|catalog-version>"
                     .into(),
             );
         }

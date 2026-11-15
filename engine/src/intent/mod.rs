@@ -2,6 +2,7 @@
 mod resolve;
 mod types;
 mod validate;
+mod wan;
 pub use resolve::resolve;
 pub use types::*;
 

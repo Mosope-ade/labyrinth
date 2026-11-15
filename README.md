@@ -9,17 +9,16 @@ assesses completed designs. CLI and GUI will use the same hosted API.
 
 ## Current state
 
-The first engine contract slice is implemented: partial/resolved intent, typed
-network drafts, structural integrity checks, catalog YAML/schema/semantic validation,
-immutable catalog identity and fixtures. Deterministic role planning, capability filtering and bounded assignment ranking
-are implemented too. Physical port binding and configurable IPv4/VLAN allocation
-now produce an intermediate topology plan. Logical forwarding, five-pass verification,
-running services and CLI commands are not implemented yet.
-The previous code has not been restored. Campus/branch WAN are validation scenarios,
-not the product's scope. Vendor configs and runnable labs are outside V1.
+The V1 core implements structured intent/readiness, versioned generic catalogs,
+deterministic selection and repair, physical/L2/L3 topology, configurable IPAM/VLANs,
+explicit WAN services, stateless policies, controlled session packing, five-pass
+verification, neutral package assembly and context-validated incremental additions.
+Campus/branch hub-spoke is the first supported scenario; other named blueprints reject
+explicitly. It is not the product boundary.
 
-See [engine contracts](docs/contracts/engine-v1.md) for exact semantics, admission
-limits, schema tooling and assurance boundaries.
+See [core contracts](docs/contracts/core-v1.md) for APIs, the 13-file package,
+assumptions and supported limits. Hosted API/worker execution, authentication,
+storage, product CLI, optional AI clarification, GUI and admin UI remain later work.
 
 ## Source map
 
@@ -30,7 +29,7 @@ limits, schema tooling and assurance boundaries.
 - `cli/`: hosted client boundary for `laby`; no engine dependency or offline generator.
 - `web/`: future React/TypeScript workspace and admin GUI, after backend acceptance.
 - `catalog/`: versioned archetype YAML, schemas and catalog bundle metadata.
-- `schemas/`: future public intent/model/API contract outputs.
+- `schemas/`: generated public intent/model/options/report/package contracts; API contracts follow.
 - `tests/`: cross-component tests, scenario fixtures and independent reference models.
 - `infra/`: future deployment/local service definitions; no providers selected yet.
 - `docs/`: architecture decisions and contract documentation.
@@ -62,10 +61,6 @@ Read each boundary's documentation before adding dependencies. Keep contracts ty
 errors explicit, resource use bounded and changes tested. Follow the documents'
 security, scalability, reliability and code-review requirements from the first slice.
 
-Next: resolve L2/HA forwarding, assemble the complete canonical topology, and
-implement abstract routing/policy synthesis with five-pass verification. Full
-incremental blueprint planning also awaits explicit prior-revision context.
-See [selection contracts](docs/contracts/selection-v1.md) for scoring, repairs and limits.
-
-See [addressing contracts](docs/contracts/addressing-v1.md) for configurable conventions,
-allocation guarantees and the intermediate plan demonstration.
+Next after core acceptance: hosted asynchronous backend contracts and execution,
+including tenant isolation, durable revisions/jobs, storage and authentication.
+The core itself requires no AI key, HTTP, database or services.

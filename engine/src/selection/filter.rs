@@ -17,6 +17,9 @@ pub fn filter_candidates(
         modes.sort_by_key(|m| &m.id);
         for m in modes {
             let mut reasons = Vec::new();
+            if req.pinned_mode.as_ref().is_some_and(|pin| pin != &m.id) {
+                reasons.push(RejectReason::PinConflict);
+            }
             if !a.roles.contains(&req.role) {
                 reasons.push(RejectReason::Role);
             }

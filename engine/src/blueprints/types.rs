@@ -34,7 +34,7 @@ pub struct ZoneLayer2Requirement {
 pub struct FirewallHaRequirement {
     pub zone: ZoneId,
     pub devices: Vec<DeviceId>,
-    pub sync_link: LinkId,
+    pub sync_links: Vec<LinkId>,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema)]
 pub struct BlueprintPlan {

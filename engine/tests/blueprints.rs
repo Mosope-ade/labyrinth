@@ -52,7 +52,7 @@ fn hub_spoke_maps_roles_and_growth_without_generation_claims() {
             .devices
             .iter()
             .filter(|d| d.role == DeviceRole::Firewall)
-            .all(|d| d.peak_mbps == 120)
+            .all(|d| d.peak_mbps == 240)
     );
     assert!(!p.decisions.is_empty());
 }
@@ -75,6 +75,7 @@ fn explicit_unsupported_blueprints_and_missing_hub_are_not_silently_replaced() {
 fn automatic_density_rule_is_explicit_and_overridable() {
     let mut v = input();
     v["sites"].as_array_mut().unwrap().truncate(1);
+    v["wan_services"] = json!([]);
     v["demands"] = json!([]);
     v["policies"] = json!([]);
     v["sites"][0]["zones"][0]["endpoint_count"] = json!(600);
@@ -166,7 +167,7 @@ fn global_search_limit_is_not_hidden_by_repair() {
 #[test]
 fn zone_distribution_and_control_links_are_explicit_requirements() {
     let p = blueprints::plan(&resolved(input()), &catalog(), 3).unwrap();
-    assert_eq!(p.rules_version, "blueprint_rules_v2");
+    assert_eq!(p.rules_version, "blueprint_rules_v3");
     assert_eq!(
         p.requirements
             .devices
@@ -207,12 +208,12 @@ fn zone_distribution_and_control_links_are_explicit_requirements() {
             p.requirements
                 .connections
                 .iter()
-                .any(|l| l.id == h.sync_link)
+                .any(|l| h.sync_links.contains(&l.id))
         );
         assert!(
             p.layer2_domains
                 .iter()
-                .all(|d| !d.links.contains(&h.sync_link))
+                .all(|d| h.sync_links.iter().all(|id| !d.links.contains(id)))
         );
     }
 }

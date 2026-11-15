@@ -13,6 +13,7 @@ pub struct PartialIntent {
     pub sites: Option<Vec<SiteRequirement>>,
     pub demands: Option<Vec<TrafficDemand>>,
     pub policies: Option<Vec<FlowPolicy>>,
+    pub wan_services: Option<Vec<WanService>>,
     pub redundancy: Option<RedundancyTier>,
     pub blueprint: Option<BlueprintChoice>,
     pub growth_percent: Option<u8>,
@@ -113,6 +114,7 @@ pub struct IntentData {
     pub sites: Vec<ResolvedSite>,
     pub demands: Vec<TrafficDemand>,
     pub policies: Vec<FlowPolicy>,
+    pub wan_services: Vec<WanService>,
     pub redundancy: RedundancyTier,
     pub blueprint: BlueprintChoice,
     pub growth_percent: u8,
@@ -175,4 +177,17 @@ impl Default for EndpointAttachment {
             poe_watts_per_endpoint: None,
         }
     }
+}
+
+/// Explicit confirmed attachment to an abstract WAN service. Matching provider
+/// names alone never imply connectivity. Each connected peer must reciprocate.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct WanService {
+    pub site: SiteId,
+    pub provider_failure_domain: FailureDomainId,
+    #[schemars(range(min = 1))]
+    pub committed_bandwidth_mbps: u64,
+    #[schemars(length(max = 63))]
+    pub connected_sites: Vec<SiteId>,
 }

@@ -47,7 +47,10 @@
       "id": "staff-to-guest",
       "from_zone": "staff",
       "to_zone": "guest",
-      "peak_mbps": 100
+      "peak_mbps": 100,
+      "distribution": {
+        "mode": "single_path"
+      }
     }
   ],
   "policies": [
@@ -85,5 +88,39 @@
   "excluded_ipv4": [],
   "update": {
     "mode": "stateless_redesign"
-  }
+  },
+  "wan_services": [
+    {
+      "site": "hub",
+      "provider_failure_domain": "isp-a",
+      "committed_bandwidth_mbps": 1000,
+      "connected_sites": [
+        "branch"
+      ]
+    },
+    {
+      "site": "hub",
+      "provider_failure_domain": "isp-b",
+      "committed_bandwidth_mbps": 1000,
+      "connected_sites": [
+        "branch"
+      ]
+    },
+    {
+      "site": "branch",
+      "provider_failure_domain": "isp-a",
+      "committed_bandwidth_mbps": 1000,
+      "connected_sites": [
+        "hub"
+      ]
+    },
+    {
+      "site": "branch",
+      "provider_failure_domain": "isp-b",
+      "committed_bandwidth_mbps": 1000,
+      "connected_sites": [
+        "hub"
+      ]
+    }
+  ]
 }

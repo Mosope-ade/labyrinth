@@ -66,7 +66,7 @@ A successful generation produces one versioned package containing:
 - Decision log, resolved intent/defaults and reproducibility/version manifest.
 
 Machine-readable data is authoritative; CSV and human-readable views derive from the
-same revision. Exact file/diagram formats are finalized before artifact implementation.
+same revision. The core JSON file contract is defined in docs/contracts/core-v1.md; client views derive from it.
 An optional AI assessment is a separately labeled, revision-bound artifact.
 
 ### New design
@@ -167,6 +167,15 @@ Operating-mode limits, shared ports and usable aggregate/per-flow paths constrai
 Acceptance: a backup path that preserves connectivity but cannot carry required demand
 fails capacity/resilience verification; shared-link demand is not double-counted or ignored.
 
+Per-session/splittable traffic support is in V1 scope. Demand inputs explicitly choose
+single-path aggregate reservation or session cohorts (per-session peak × simultaneous
+count), with cohort upper bounds summing to the declared aggregate peak. Missing
+capacity-critical profile information requires clarification. Individual sessions must
+not be striped across paths or justified by summed LACP/ECMP capacity. Controlled session steering with explicit selected-mode capability checks is required;
+ordinary hashing is not accepted as a balancing guarantee. Nonzero session growth
+explicitly chooses rates or concurrency. Aggregate growth targets and conservative
+integer session-granularity reservations must be reported separately.
+
 ### FR-06 — Addressing and VLANs
 
 Derive deterministic, capacity-sufficient IPv4 allocations and VLAN assignments from
@@ -190,9 +199,29 @@ LACP/spanning-tree capabilities and forwarding explicitly; ECMP or a generic HA
 flag cannot substitute for an L2 mechanism. See
 [the addressing contract](docs/contracts/addressing-v1.md).
 
+Agreed logical-stage contract: deterministic abstract L2 steady-state trees over
+explicit LACP adjacencies; active/standby gateway ownership with overridable preference
+and no automatic preemption. Both-live total HA-control loss fails closed; confirmed
+owner-device failure permits takeover. A live owner losing its modeled local data
+path may coordinate transfer to an eligible standby while HA synchronization remains
+healthy; total synchronization loss still fails closed. Recovery does not preempt
+a committed owner. Reserve two separate HA-control cables per
+pair. These model semantics do not claim RSTP timing, real fencing, synchronization
+performance, provider reachability or full resilience. See
+[logical-v1](docs/contracts/logical-v1.md).
+
+Confirmed WAN boundary: the core requires explicit WanService attachments (site,
+provider failure domain, committed bandwidth and connected sites). AI may propose
+those values during clarification, but user confirmation/editing precedes generation.
+Matching ISP strings alone never prove transport connectivity. Verification is scoped
+to the declared abstract service, not carrier internals. See
+[routing-policy-v1](docs/contracts/routing-policy-v1.md).
+
 ### FR-07 — Abstract routing and firewall policy
 
-Derive routes and policy matrices from the same canonical network. Preserve explicit
+Use order-independent deny-overrides with default deny. Reject positive demands
+with no permitted service after denies. Derive routes and policy matrices from the
+same canonical network. Preserve explicit
 allowed flows and required isolation; model enforcement locations and routing choice.
 No vendor config text is produced. Reject unsupported policy semantics rather than
 silently treating inspection as permit or a physical path as an allowed flow.
@@ -428,7 +457,7 @@ persist its outputs. Engine unit/fixture tests remain independent of infrastruct
 
 Workers and API are separately runnable and scalable; independent components do not
 require independent physical hosts initially. Queue durability may be implemented
-through the selected database or a queue service; no provider is selected yet.
+through the selected database or a queue service; Supabase Queues (pgmq) is selected; see ADR 0003.
 
 Development must provide an AI-free integration environment. Before release, define
 region, service credentials, transport/storage protection, limits, backups/restore,
@@ -581,22 +610,21 @@ choice below. These are staged decisions, not permission to invent product behav
 
 Do not treat these as agreed defaults. Resolve each before the named implementation:
 
-Before intent/engine contracts:
-- Settled first-slice contract: directional simultaneous peak demand in integer Mbps;
-  explicit protocol/port matches, default deny and separately declared return traffic.
-  No implicit stateful sessions. See docs/contracts/engine-v1.md. Growth aggregation,
-  routing/forwarding realization and additional traffic classes remain to be specified.
-- Scoring/headroom are settled in docs/contracts/selection-v1.md. Endpoint attachment
-  defaults to 1000 Mbps copper with explicit overrides; PoE per-port requirements
-  require clarification when requested but unknown. Future blueprint-specific objectives
-  must be versioned and cannot silently replace the agreed priority order.
-- Blueprint thresholds, initial endpoint/site/zone scale limits (current bounds documented),
-  HA/load-sharing assumptions and required failure-domain inputs.
-- Exact package filenames/formats and completeness/diagnostic API schemas.
+Core decisions settled during implementation:
+- Directional stateless protocol/port policies, explicit return traffic, deny-overrides.
+- Aggregate single-path traffic or controlled session cohorts with explicit growth
+  dimension and required steering capabilities; no guaranteed ordinary hash balancing.
+- Explicit reciprocal WAN service attachments; provider names alone never connect sites.
+- Scoring/headroom, configurable addressing, zone distribution and conservative HA
+  ownership/path-health failover are recorded in docs/contracts/.
+- Complete JSON package/options/report/error contracts and bounded search/scale limits
+  are defined in docs/contracts/core-v1.md and generated schemas.
+- The first hub-spoke scenario supports Tier0–Tier3. Other blueprints reject explicitly.
 
 Before hosted implementation:
-- Database, authentication provider/flows, object storage, durable queue and deployment
-  provider/region. API/CLI auth must support both interactive and scripted use safely.
+- Provider selection is settled in ADR 0003: Cloudflare Pages, Render, Supabase
+  Postgres/Auth/Storage/Queues and GitHub Releases. Exact regions, service sizing and
+  API/CLI interactive/scripted authentication contracts remain to be finalized.
 - Total job CPU/memory/time limits, queue/concurrency quotas and bounded retry policy.
 
 Before AI integration:

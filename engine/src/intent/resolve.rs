@@ -37,6 +37,12 @@ pub fn resolve(input: PartialIntent) -> Result<Readiness, ValidationErrors> {
         "/excluded_ipv4",
         "at most 1024 excluded ranges",
     );
+    c.require(
+        input.wan_services.as_ref().is_none_or(|s| s.len() <= 1024),
+        LimitExceeded,
+        "/wan_services",
+        "at most 1024 explicit WAN attachments",
+    );
     c.finish()?;
     let exclusions = input.excluded_ipv4.clone().unwrap_or_default();
     let mut c = Checks::default();
@@ -69,6 +75,7 @@ pub fn resolve(input: PartialIntent) -> Result<Readiness, ValidationErrors> {
         );
     }
     let (site_ids, zone_ids, zones_complete) = super::validate::sites(&input, &mut c, &mut need);
+    super::wan::validate(&input, &site_ids, &mut c, &mut need);
     super::validate::traffic(&input, &zone_ids, zones_complete, &mut c, &mut need);
     if let Some(g) = input.growth_percent {
         c.require(
@@ -181,6 +188,7 @@ pub fn resolve(input: PartialIntent) -> Result<Readiness, ValidationErrors> {
         ("/ipv4_pool", input.ipv4_pool.is_some()),
         ("/blueprint", input.blueprint.is_some()),
         ("/excluded_ipv4", input.excluded_ipv4.is_some()),
+        ("/wan_services", input.wan_services.is_some()),
     ] {
         provenance.insert(
             path.into(),
@@ -257,6 +265,7 @@ pub fn resolve(input: PartialIntent) -> Result<Readiness, ValidationErrors> {
         sites,
         demands: input.demands.expect("readiness invariant"),
         policies: input.policies.expect("readiness invariant"),
+        wan_services: input.wan_services.unwrap_or_default(),
         redundancy: input.redundancy.expect("readiness invariant"),
         blueprint: input.blueprint.unwrap_or(BlueprintChoice::Automatic),
         growth_percent: input.growth_percent.unwrap_or(20),

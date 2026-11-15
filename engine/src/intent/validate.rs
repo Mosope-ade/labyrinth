@@ -186,6 +186,39 @@ pub(super) fn traffic(
                     format!("{p}/peak_mbps"),
                     "peak demand must be positive integer Mbps",
                 );
+                match &d.distribution {
+                    None => need(
+                        &format!("{p}/distribution"),
+                        "explicitly choose single_path or provide simultaneous session cohorts",
+                    ),
+                    Some(crate::model::TrafficDistribution::SinglePath) => (),
+                    Some(crate::model::TrafficDistribution::Sessions { cohorts, growth }) => {
+                        if input.growth_percent.unwrap_or(20) > 0 && growth.is_none() {
+                            need(
+                                &format!("{p}/distribution/growth"),
+                                "choose rates or concurrency growth for session traffic",
+                            );
+                        }
+                        c.require(
+                            (1..=64).contains(&cohorts.len()),
+                            LimitExceeded,
+                            format!("{p}/distribution/cohorts"),
+                            "provide 1..64 session cohorts",
+                        );
+                        let mut total = 0u128;
+                        for (j, cohort) in cohorts.iter().take(64).enumerate() {
+                            c.require(
+                                cohort.session_peak_mbps > 0 && cohort.simultaneous_sessions > 0,
+                                InvalidValue,
+                                format!("{p}/distribution/cohorts/{j}"),
+                                "session peak and simultaneous count must be positive",
+                            );
+                            total += u128::from(cohort.session_peak_mbps)
+                                * u128::from(cohort.simultaneous_sessions);
+                        }
+                        c.require(total==u128::from(d.peak_mbps),Conflict,format!("{p}/peak_mbps"),"aggregate peak must equal the sum of simultaneous session-cohort upper bounds");
+                    }
+                }
                 c.require(
                     d.from_zone != d.to_zone,
                     InvalidValue,

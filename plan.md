@@ -314,13 +314,13 @@ are open decisions to settle before AI implementation.
 
 ## 9. Milestones and execution gates
 
-All unchecked. Each milestone is split into focused implementation tasks before coding;
+Milestone status is recorded below. Each milestone is split into focused tasks;
 PRD requirement IDs provide acceptance traceability. No frontend task begins early.
 
 ### M0 — Freeze contracts and scaffold separate components
 
-- [ ] Record remaining open decisions from PRD section 12.
-- [ ] Define partial/resolved intent, canonical model, errors and report schemas.
+- [x] Record remaining open decisions from PRD section 12.
+- [x] Define partial/resolved intent, canonical model, errors and report schemas.
 - [x] Establish Rust workspace, fixtures, schema/catalog checks and CI commands.
 Gate: no stale vendor-config/local-CLI assumptions; contracts distinguish clarification,
 invalid input, unsupported request, infeasibility, search exhaustion and timeout.
@@ -335,23 +335,25 @@ constraints have positive/negative tests. Reference hints cannot change feasibil
 
 ### M2 — First complete engine slice
 
-- [ ] Implement generic blueprint interface; first campus/branch hub-spoke scenario.
-- [ ] Resolve port/L2/L3 connections, IPAM/VLANs, abstract routes and firewall policies.
-- [ ] Add all five deterministic verification passes and package assembly.
+- [x] Implement generic blueprint interface; first campus/branch hub-spoke scenario.
+- [x] Resolve port/L2/L3 connections, IPAM/VLANs, abstract routes and firewall policies.
+- [x] Add all five deterministic verification passes and package assembly.
 Gate: 1 hub + N branches scenario produces the entire neutral package with no external
 AI/HTTP/storage dependency in engine tests. This is scenario coverage, not product scope.
 
 ### M3 — Resilience and update-mode completion
 
-- [ ] Cover Tier0–Tier3 using explicit protected sets and failure domains.
-- [ ] Add peak-demand/growth and post-failure capacity checks.
-- [ ] Implement Stateless Redesign and pinned Incremental Update.
+- [x] Cover Tier0–Tier3 using explicit protected sets and failure domains.
+- [x] Add peak-demand/growth and post-failure capacity checks.
+- [x] Implement Stateless Redesign and pinned Incremental Update.
 Gate: Tier3 two-hub fixture passes site/ISP failures; single-hub Tier3 requests clarify;
 pin conflicts block; stale revisions reject; identical inputs reproduce outputs.
 
 ### M4 — Hosted asynchronous backend
 
-- [ ] Finalize authentication, DB/object storage and durable queue choices.
+- [x] Select infrastructure providers: Cloudflare Pages, Render API/workers, Supabase
+  Postgres/Auth/Storage/Queues and GitHub Releases; see ADR 0003.
+- [ ] Finalize regions, service sizing, auth flows and operational limits before deployment.
 - [ ] Build Axum contracts, tenant isolation, revisions, workers and staged publication.
 - [ ] Add idempotency, leases/recovery, cancellation and enforceable resource limits.
 - [ ] Define admin RBAC/audit boundaries, operational/AI telemetry, usage reporting,
@@ -527,3 +529,88 @@ The user also selected zone distribution switches for shared-VLAN aggregation.
 Blueprint rules v2 now add the distribution layer, explicit LACP/RSTP capabilities,
 L2-domain link requirements and dedicated firewall HA-control links. Capability
 selection and port allocation are tested; actual L2/HA forwarding remains open.
+
+
+## L2/HA and canonical assembly checkpoint — 2026-11-12
+
+Abstract deterministic L2 trees (LACP adjacency collapse, forwarding/blocked evidence,
+confirmed-failure recomputation), active/standby owner evaluation and baseline canonical
+assembly are implemented. The user approved deterministic overridable owner preference,
+no automatic preemption, confirmed-owner-device failure takeover, and fail-closed total
+HA-control loss while both peers remain alive. Blueprint rules v3 reserve two HA-control
+cables per pair. See [logical-v1](docs/contracts/logical-v1.md) and ADR-0002.
+
+`pipeline::assemble_network` produces structurally validated canonical entities with
+explicit gateway member/VIP ownership, L2 states, LACP/ECMP groups and unresolved
+provider handoffs. Route/policy collections are intentionally empty at this stage;
+M2's synthesis, all five verification passes and final package assembly remain open.
+Tier0–Tier3 shape coverage is not resilience sign-off. Full incremental updates and
+protocol convergence/fencing behavior remain outside this implemented contract.
+
+
+### Confirmed HA path-health behavior — 2026-11-12
+
+The user approved coordinated standby takeover for a live owner that loses its
+modeled local L2 or all routed-transit attachments, provided HA synchronization is
+healthy and the standby is eligible. Total control loss while both peers live still
+fails closed; an ineligible pair remains unavailable; recovery never preempts the
+committed owner. Tests cover distribution failure, attachment loss, all owner-side
+core-link loss, simultaneous synchronization loss and recovery. Remote/provider
+health and five-pass resilience assurance remain separate work.
+
+## Core-completion work in progress — 2026-11-12
+
+The user confirmed explicit WAN-service attachments inside the core, with AI-proposed
+values confined to clarification and requiring user confirmation. The core must never
+infer transport connectivity from ISP strings. Deny-overrides, default deny and rejection
+of positive demands without permitted services are also confirmed. See
+[routing-policy-v1](docs/contracts/routing-policy-v1.md).
+
+WAN intent checks, service classification and destination-tree routing tests have passed.
+Five-pass evidence, failure-state resource accounting, package assembly and pinned update
+completion remain active work, not accepted milestones. Traffic/session granularity needs
+a user decision before final capacity and resilience semantics can be frozen.
+
+
+### Session traffic extension — 2026-11-12
+
+The user selected per-session/splittable traffic inputs now. Explicit traffic profiles
+and simultaneous session cohorts are implemented/validated; the sum of cohort upper
+bounds must equal declared aggregate peak. Missing profiles clarify, and routing
+rejects session profiles until the multipath implementation is complete. Controlled
+session steering versus worst-case ECMP/LACP hash-skew sizing needs a decision before
+that behavior is implemented. Core completion remains unachieved.
+
+
+### Controlled sessions, verified packages and pinned-context progress — 2026-11-12
+
+The user approved controlled session steering with mode-capability checks. Session
+cohort packing, explicit rates/concurrency growth choices, independent conservation
+checks and shared service budgets are implemented and tested against an exhaustive
+small reference. A five-pass-verified, deterministic 13-file neutral package is now
+assembled with BOM, catalog snapshot, provenance and SHA-256 manifests.
+
+Incremental endpoint expansion preserves all previous CIDRs/VLANs and exact core
+archetype/mode assignments using an authoritative base revision and manifest digest.
+Stale revisions, incomplete/altered pins, catalog mismatches, tampered saved payloads
+and insufficient pinned capacity reject. New-site expansion and broad scenario/scale
+acceptance remain under test; do not mark core completion from this checkpoint alone.
+
+## Core acceptance checkpoint — 2026-11-12
+
+M0–M3 gates passed. See [requirement evidence, commands and assurance limits](docs/testing/core-acceptance.md).
+The workspace passed 124 tests including five compile-fail checks; the complete
+AI-free example produces a verified 13-file package manifest. The 126-device,
+496-failure-case regression passes. M4+ remains unfinished and is not implied by
+core acceptance. Earlier dated checkpoints record intermediate states; current
+contracts and the acceptance checkpoint supersede their pending-work notes.
+
+## Hosted infrastructure checkpoint — 2026-11-15
+
+Provider decisions are recorded in [ADR 0003](docs/decisions/0003-hosted-infrastructure.md).
+Next: tenant/project/revision schema and transactional job admission, lease/fencing,
+staged publication and recovery contracts. No services have been provisioned.
+
+The initial [hosted job lifecycle contract](docs/contracts/hosted-jobs-v1.md) defines
+tenant ownership, transactional admission, attempt fencing, cancellation, staged
+publication and recovery acceptance cases. Runtime implementation remains pending.

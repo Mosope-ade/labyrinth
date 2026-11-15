@@ -79,6 +79,9 @@ pub struct LoopbackAddressing {
 /// ```
 #[derive(Debug, Clone, Serialize, JsonSchema)]
 pub struct AllocatedTopology {
+    #[serde(skip)]
+    #[schemars(skip)]
+    pub(super) catalog: crate::catalog::CatalogSnapshot,
     pub(super) selection: SelectedPlan,
     pub(super) policy: AddressingPolicy,
     pub(super) ports: Vec<BoundPort>,
@@ -90,6 +93,9 @@ pub struct AllocatedTopology {
     pub(super) loopbacks: Vec<LoopbackAddressing>,
 }
 impl AllocatedTopology {
+    pub(crate) fn catalog(&self) -> &crate::catalog::CatalogSnapshot {
+        &self.catalog
+    }
     pub fn selection(&self) -> &SelectedPlan {
         &self.selection
     }
@@ -138,6 +144,7 @@ pub enum PlanningError {
     Selection(SelectionError),
     Addressing(crate::ipam::AddressError),
     InvalidPolicy(String),
+    Canonical(crate::diagnostics::ValidationErrors),
 }
 impl From<SelectionError> for PlanningError {
     fn from(e: SelectionError) -> Self {

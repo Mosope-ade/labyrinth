@@ -23,6 +23,41 @@ fn generated_contract_schemas_are_current() {
             .unwrap(),
             include_str!("../../schemas/addressing-policy-v1.schema.json"),
         ),
+        (
+            serde_json::to_value(schemars::schema_for!(
+                labyrinth_engine::topology::LogicalPolicy
+            ))
+            .unwrap(),
+            include_str!("../../schemas/logical-policy-v1.schema.json"),
+        ),
+        (
+            serde_json::to_value(schemars::schema_for!(
+                labyrinth_engine::artifacts::GenerationOptions
+            ))
+            .unwrap(),
+            include_str!("../../schemas/generation-options-v1.schema.json"),
+        ),
+        (
+            serde_json::to_value(schemars::schema_for!(
+                labyrinth_engine::verification::VerificationReport
+            ))
+            .unwrap(),
+            include_str!("../../schemas/verification-report-v1.schema.json"),
+        ),
+        (
+            serde_json::to_value(schemars::schema_for!(
+                labyrinth_engine::artifacts::PackageManifest
+            ))
+            .unwrap(),
+            include_str!("../../schemas/package-manifest-v1.schema.json"),
+        ),
+        (
+            serde_json::to_value(schemars::schema_for!(
+                labyrinth_engine::artifacts::GenerationError
+            ))
+            .unwrap(),
+            include_str!("../../schemas/generation-error-v1.schema.json"),
+        ),
     ] {
         assert_eq!(
             generated,

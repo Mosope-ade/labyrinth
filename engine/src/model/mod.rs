@@ -4,6 +4,12 @@ mod ids;
 pub use address::{Ipv4InterfaceAddress, Ipv4Prefix};
 mod traffic;
 pub use traffic::*;
+mod engineering;
+mod engineering_validate;
+pub use engineering::*;
+mod forwarding;
+mod forwarding_validate;
+pub use forwarding::*;
 mod logical;
 mod network;
 mod validate;
@@ -48,6 +54,7 @@ pub enum Feature {
     Poe,
     HighAvailability,
     RapidSpanningTree,
+    SessionSteering,
 }
 
 #[derive(

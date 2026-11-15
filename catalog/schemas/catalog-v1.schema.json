@@ -125,7 +125,8 @@
         "ecmp",
         "poe",
         "high_availability",
-        "rapid_spanning_tree"
+        "rapid_spanning_tree",
+        "session_steering"
       ],
       "type": "string"
     },

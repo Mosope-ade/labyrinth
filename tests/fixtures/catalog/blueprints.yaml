@@ -1,5 +1,5 @@
 schema_version: catalog_v1
-version: 1.1.0
+version: 1.2.0
 archetypes:
   - id: access-switch
     roles: [access_switch]
@@ -29,7 +29,7 @@ archetypes:
   - id: core-switch
     roles: [core_switch]
     relative_cost_tier: 2
-    features: [switching, routing, vlan, ecmp, high_availability]
+    features: [switching, routing, vlan, ecmp, high_availability, session_steering]
     poe_budget_watts: null
     port_groups:
       - id: copper
@@ -48,7 +48,7 @@ archetypes:
         breakout: null
     operating_modes:
       - id: base
-        features: [switching, routing, vlan, ecmp, high_availability]
+        features: [switching, routing, vlan, ecmp, high_availability, session_steering]
         throughput_mbps: 100000
     reference_hints: []
   - id: zone-distribution
@@ -79,7 +79,7 @@ archetypes:
   - id: zone-firewall
     roles: [firewall]
     relative_cost_tier: 3
-    features: [routing, firewall, ips, vpn, nat, ecmp, high_availability, lacp]
+    features: [routing, firewall, ips, vpn, nat, ecmp, high_availability, lacp, session_steering]
     poe_budget_watts: null
     port_groups:
       - id: copper
@@ -98,13 +98,13 @@ archetypes:
         breakout: null
     operating_modes:
       - id: base
-        features: [routing, firewall, ips, vpn, nat, ecmp, high_availability, lacp]
+        features: [routing, firewall, ips, vpn, nat, ecmp, high_availability, lacp, session_steering]
         throughput_mbps: 100000
     reference_hints: []
   - id: wan-edge
     roles: [wan_edge]
     relative_cost_tier: 2
-    features: [routing, ecmp]
+    features: [routing, ecmp, session_steering]
     poe_budget_watts: null
     port_groups:
       - id: copper
@@ -123,6 +123,6 @@ archetypes:
         breakout: null
     operating_modes:
       - id: base
-        features: [routing, ecmp]
+        features: [routing, ecmp, session_steering]
         throughput_mbps: 100000
     reference_hints: []

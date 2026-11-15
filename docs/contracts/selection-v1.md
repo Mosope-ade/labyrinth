@@ -120,9 +120,9 @@ external attachments, decisions and prior repair bottlenecks. It is NOT an alloc
 NetworkDraft, verified build or complete engineering package.
 
 Direct fixed-role selection preserves pinned archetypes and fails on incompatible
-pins. Blueprint incremental-update requests currently reject explicitly because the
-prior-revision context is not implemented. They never fall back to Stateless Redesign.
-Full pinned expansion is still required at the update-mode milestone.
+pins. Direct blueprint calls without a validated prior-revision context reject incremental
+requests. Use `artifacts::generate_incremental` with `BaseRevision` for complete pinned
+expansion; it never falls back to Stateless Redesign.
 
 ## Bounds, evidence and verification commands
 
@@ -133,7 +133,7 @@ Oversized endpoint populations can drive repair, but device-count admission is c
 before allocating the blueprint. Unknown capacity, unsupported breakout assignment,
 mode features and pins cannot be relaxed to finish. PoE total load must fit declared
 endpoint maxima; per-partition power is conservatively bounded by total grown load
-and that partition's port maxima. No solver/clock/random source is used in this slice.
+and that partition's port maxima. No external solver or randomness is used; selection enforces a cooperative deadline.
 
 Test suites:
 
@@ -149,11 +149,11 @@ missing/insufficient throughput and power, port incompatibility, pins, connectio
 compatibility, stable ordering, bounded search and an exhaustive small port-matching
 reference plus exhaustive fixed-assignment ranking reference. Blueprint tests cover
 role counts, density overrides, repair exhaustion, stable identities and the explicit
-incremental-context limitation. These do not replace future routing/security/resilience
-proofs, allocation tests, performance benchmarks or hosted-worker resource enforcement.
+incremental-context limitation. Complete routing/security/resilience and package tests are described in
+[core acceptance](../testing/core-acceptance.md). Hosted-worker enforcement remains separate.
 
 
-## Zone distribution refinement — 2026-11-12
+## Historical zone distribution refinement — 2026-11-12
 
 `blueprint_rules_v2` supersedes the original direct access/firewall link layout above.
 The user chose zone distribution switches to aggregate a shared per-zone VLAN across
@@ -178,3 +178,11 @@ includes the added distribution roles; exact assignment ranking is unchanged.
 Only the synthetic test catalog was expanded to support these capabilities. The
 pinned foundation reference bundle and its identity are preserved. Future production
 catalogs must declare capabilities rather than inheriting them from a device role.
+
+## Redundant HA control refinement — 2026-11-12
+
+`blueprint_rules_v3` supersedes v2's single synchronization cable with two explicit
+control cables per firewall pair. Both consume real selected ports and preserve the
+conservative full-zone synchronization capacity bound. L2/domain classifications,
+strict scoring and the three-pass repair policy are unchanged. See
+[logical-v1](logical-v1.md) for active/standby ownership and the later canonical stage.

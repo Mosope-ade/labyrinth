@@ -90,10 +90,21 @@ pub(super) fn validate(
         }
     }
     let mut policies = BTreeSet::new();
+    let mut bindings = BTreeSet::new();
+    let mut definitions = BTreeMap::new();
     for (i, b) in n.policies.iter().enumerate() {
         let p = format!("/policies/{i}");
+        policies.insert(&b.policy.id);
+        if let Some(previous) = definitions.insert(&b.policy.id, &b.policy) {
+            c.require(
+                previous == &b.policy,
+                Conflict,
+                &p,
+                "same policy ID has contradictory definitions",
+            );
+        }
         c.require(
-            policies.insert(&b.policy.id),
+            bindings.insert((&b.policy.id, &b.device, &b.ingress)),
             DuplicateId,
             &p,
             "duplicate policy binding ID",

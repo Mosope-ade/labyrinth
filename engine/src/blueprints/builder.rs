@@ -59,6 +59,7 @@ impl<'a> Builder<'a> {
                 peak_mbps: peak,
                 poe_watts: None,
                 pinned_archetype: None,
+                pinned_mode: None,
                 ports: vec![],
             },
         );

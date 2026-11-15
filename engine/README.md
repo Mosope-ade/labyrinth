@@ -15,14 +15,17 @@ Pure Rust, deterministic, vendor-neutral. Module boundaries:
 - `artifacts`: immutable neutral engineering package and deterministic serialization.
 - `pipeline`: orchestration and typed stage/failure boundaries.
 
-Intent, model and catalog now have typed contracts and positive/negative tests.
-Selection, hub-spoke blueprint rules and the first pipeline coordinator slice are
-also implemented. Physical port binding and IPv4/VLAN allocation are implemented;
-logical forwarding, route/policy synthesis and verification remain future work.
-Draft/model readiness and selected role plans are not five-pass
-verification. See ../docs/contracts/engine-v1.md for supported semantics and limits.
-No HTTP, storage, AI or UI dependencies.
+The core now connects these stages end to end and emits a verified neutral package.
+Use `artifacts::generate` for stateless designs and `generate_incremental` with a
+validated `BaseRevision` for additions. No partial/unverified package is constructed.
 
-See [addressing-v1](../docs/contracts/addressing-v1.md) for the intermediate output,
-configurable defaults and developer example. Full incremental planning is still gated
-on prior-revision context even though the allocator can preserve individual pins.
+Read [core-v1](../docs/contracts/core-v1.md) and
+[verification-v1](../docs/contracts/verification-v1.md) for accepted semantics,
+protected sets, assumptions and limits. Hub-spoke is the first supported scenario;
+other architectures remain explicit unsupported requests until implemented.
+
+No HTTP, persistence, authentication, AI, UI or filesystem dependencies enter the
+library. Development examples and test fixtures are not the installed product CLI.
+
+Complete AI-free package demonstration: `cargo run -p labyrinth-engine --example generate_fixture --locked`.
+See [core acceptance](../docs/testing/core-acceptance.md) for test evidence and limits.

@@ -10,6 +10,7 @@ fn need() -> DeviceRequirement {
         peak_mbps: 1000,
         poe_watts: None,
         pinned_archetype: None,
+        pinned_mode: None,
         ports: vec![
             PortDemand {
                 id: PortGroupId::new("endpoints").unwrap(),

@@ -166,3 +166,11 @@ not generation, allocation or verification claims.
 See [addressing-v1](addressing-v1.md) for implemented deterministic IPv4/VLAN
 allocation, concrete port binding, configurable defaults and assurance boundaries.
 The intermediate stage does not change NetworkDraft validation into full verification.
+
+## L2/HA and canonical extension — 2026-11-12
+
+See [logical-v1](logical-v1.md) for the additive canonical interface/gateway/forwarding
+contracts. The model now admits 256 physical plus 16 logical interfaces/device,
+retaining 65,536 total interfaces, and validates canonical L2 trees and gateway
+reservations. This supersedes the earlier single total 256-interface bound to account
+explicitly for loopbacks and logical gateways. Five-pass verification is not implied.

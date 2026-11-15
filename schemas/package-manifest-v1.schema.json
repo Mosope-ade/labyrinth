@@ -1,0 +1,110 @@
+{
+  "$defs": {
+    "BaseReference": {
+      "additionalProperties": false,
+      "properties": {
+        "manifest_sha256": {
+          "type": "string"
+        },
+        "revision": {
+          "$ref": "#/$defs/RevisionId"
+        }
+      },
+      "required": [
+        "revision",
+        "manifest_sha256"
+      ],
+      "type": "object"
+    },
+    "CatalogVersion": {
+      "additionalProperties": false,
+      "properties": {
+        "semantic_version": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "semantic_version",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "FileDigest": {
+      "additionalProperties": false,
+      "properties": {
+        "sha256": {
+          "type": "string"
+        },
+        "size_bytes": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "sha256",
+        "size_bytes"
+      ],
+      "type": "object"
+    },
+    "RevisionId": {
+      "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "base_revision": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/BaseReference"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "catalog_version": {
+      "$ref": "#/$defs/CatalogVersion"
+    },
+    "engine_version": {
+      "type": "string"
+    },
+    "files": {
+      "additionalProperties": {
+        "$ref": "#/$defs/FileDigest"
+      },
+      "type": "object"
+    },
+    "options_sha256": {
+      "type": "string"
+    },
+    "requirements_sha256": {
+      "type": "string"
+    },
+    "rules": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "schema_version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "engine_version",
+    "rules",
+    "catalog_version",
+    "requirements_sha256",
+    "options_sha256",
+    "files"
+  ],
+  "title": "PackageManifest",
+  "type": "object"
+}

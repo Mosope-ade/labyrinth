@@ -1,9 +1,11 @@
 # Public contract schemas
 
-`intent-v1.schema.json` and `network-v1.schema.json` are generated from engine Rust
-types. Catalog schema lives in catalog/schemas/. Freshness and fixture compatibility
-are enforced by `cargo test -p labyrinth-engine --test schemas`.
+Generated from Rust types: intent, network, addressing-policy, logical-policy,
+generation-options, verification-report, package-manifest and generation-error.
+The catalog schema lives in `catalog/schemas/`.
 
-Regeneration commands and semantic-validation limits are documented in
-[engine contracts](../docs/contracts/engine-v1.md). Schemas do not replace cross-field
-validation. No HTTP/OpenAPI schema or generation endpoint exists yet.
+Run `cargo run -p labyrinth-engine --example export_schema -- <name>` to print a
+schema. Replace checked-in files only after successful export. Freshness and fixture
+compatibility are enforced by `cargo test -p labyrinth-engine --test schemas`.
+Schemas supplement semantic/cross-reference validation; they do not prove feasibility.
+See [core contracts](../docs/contracts/core-v1.md). HTTP/OpenAPI is a later backend task.

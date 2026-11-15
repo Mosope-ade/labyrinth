@@ -12,6 +12,8 @@ pub(crate) fn build(
     intent: &ResolvedIntent,
     selection: SelectedPlan,
     policy: &AddressingPolicy,
+    catalog: &crate::catalog::CatalogSnapshot,
+    pins: Option<&PinnedConstraints>,
 ) -> Result<AllocatedTopology, PlanningError> {
     let input = intent.data();
     let bp = &selection.blueprint;
@@ -156,7 +158,7 @@ pub(crate) fn build(
         // L2 and HA-control cables are explicitly declared by the blueprint.
         // Neither is an ordinary routed data link requiring a fabricated /31.
         if bp.layer2_domains.iter().any(|d| d.links.contains(&l.id))
-            || bp.firewall_ha.iter().any(|h| h.sync_link == l.id)
+            || bp.firewall_ha.iter().any(|h| h.sync_links.contains(&l.id))
         {
             continue;
         }
@@ -184,6 +186,31 @@ pub(crate) fn build(
                 prefix_len: Some(32),
                 pinned: None,
             });
+        }
+    }
+    if let Some(pins) = pins {
+        for (id, old) in &pins.allocations {
+            let Some(request) = requests.iter_mut().find(|r| &r.id == id) else {
+                return Err(PlanningError::Selection(
+                    crate::selection::SelectionError::PinConflict(format!(
+                        "existing allocation {id} would be removed"
+                    )),
+                ));
+            };
+            if request.zone != old.zone {
+                return Err(PlanningError::Selection(
+                    crate::selection::SelectionError::PinConflict(format!(
+                        "existing allocation {id} changes zone"
+                    )),
+                ));
+            }
+            request.pinned = Some(old.subnet.clone());
+        }
+        for request in &mut vlan_requests {
+            request.pinned = pins
+                .vlans
+                .get(&(request.site.clone(), request.zone.clone()))
+                .copied();
         }
     }
     let vlans = allocate_vlans(&vlan_requests, &policy.vlans)?;
@@ -256,6 +283,7 @@ pub(crate) fn build(
         vec![]
     };
     Ok(AllocatedTopology {
+        catalog: catalog.clone(),
         selection,
         policy: policy.clone(),
         ports,

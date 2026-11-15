@@ -20,8 +20,13 @@ pub(super) fn validate(
         ("domains", n.domains.len(), 4096),
         ("allocations", n.allocations.len(), 4096),
         ("routes", n.routes.len(), 65536),
-        ("policies", n.policies.len(), 4096),
+        ("policies", n.policies.len(), 65536),
         ("decisions", n.decisions.len(), 16384),
+        ("layer2_forwarding", n.layer2_forwarding.len(), 4096),
+        ("gateways", n.gateways.len(), 4096),
+        ("wan_connections", n.wan_connections.len(), 65536),
+        ("forwarding_routes", n.forwarding_routes.len(), 65536),
+        ("traffic_paths", n.traffic_paths.len(), 4096),
     ] {
         c.require(
             len <= max,
@@ -31,11 +36,40 @@ pub(super) fn validate(
         );
     }
     c.require(
-        n.devices.iter().all(|d| d.interfaces.len() <= 256)
-            && n.devices.iter().map(|d| d.interfaces.len()).sum::<usize>() <= 65536,
+        n.devices.iter().all(|d| {
+            d.interfaces.len() <= 272
+                && d.interfaces.iter().filter(|i| i.port.is_some()).count() <= 256
+                && d.interfaces.iter().filter(|i| i.port.is_none()).count() <= 16
+        }) && n.devices.iter().map(|d| d.interfaces.len()).sum::<usize>() <= 65536,
         LimitExceeded,
         "/devices",
-        "at most 256 interfaces/device and 65536 total",
+        "at most 256 physical + 16 logical interfaces/device and 65536 total",
+    );
+    c.require(
+        n.layer2_forwarding.iter().all(|s| {
+            s.forwarding.len() <= 65536 && s.blocked.len() <= 65536 && s.unreachable.len() <= 4096
+        }) && n
+            .layer2_forwarding
+            .iter()
+            .map(|s| s.forwarding.len() + s.blocked.len())
+            .sum::<usize>()
+            <= 65536,
+        LimitExceeded,
+        "/layer2_forwarding",
+        "at most 65536 total cable states and 4096 unreachable devices/domain",
+    );
+    c.require(
+        n.traffic_paths
+            .iter()
+            .all(|p| p.devices.len() <= 128 && p.adjacencies.len() <= 127)
+            && n.traffic_paths
+                .iter()
+                .map(|p| p.adjacencies.len())
+                .sum::<usize>()
+                <= 65536,
+        LimitExceeded,
+        "/traffic_paths",
+        "bounded session path lengths and at most 65536 total hops",
     );
     c.finish()?;
     let mut c = Checks::default();
@@ -175,7 +209,8 @@ pub(super) fn validate(
             );
             interfaces.insert((&d.id, &f.id), f);
             let is_loopback = matches!(f.kind, InterfaceKind::Loopback { .. });
-            if is_loopback {
+            let is_virtual = is_loopback || matches!(f.kind, InterfaceKind::Gateway { .. });
+            if is_virtual {
                 c.require(
                     f.port.is_none() && f.speed_mbps.is_none() && f.media == Media::Virtual,
                     Conflict,
@@ -223,7 +258,18 @@ pub(super) fn validate(
             }
             match &f.kind {
                 InterfaceKind::Routed { zone, address }
-                | InterfaceKind::Loopback { zone, address } => {
+                | InterfaceKind::Loopback { zone, address }
+                | InterfaceKind::Gateway { zone, address, .. } => {
+                    if let InterfaceKind::Gateway { domain, .. } = &f.kind {
+                        c.require(
+                            domains
+                                .get(domain)
+                                .is_some_and(|g| &g.zone == zone && g.site == d.site),
+                            UnknownReference,
+                            &fp,
+                            "gateway domain/zone/site must agree",
+                        );
+                    }
                     c.require(
                         zones.get(zone).is_some_and(|z| z.site == d.site),
                         UnknownReference,
@@ -250,6 +296,42 @@ pub(super) fn validate(
                             "initial loopback contract requires /32",
                         );
                     }
+                }
+                InterfaceKind::HaControl { peer } => {
+                    c.require(
+                        peer != &d.id && devices.get(peer).is_some_and(|p| p.site == d.site),
+                        UnknownReference,
+                        &fp,
+                        "HA peer must exist in the same site",
+                    );
+                    c.require(
+                        mode.is_some_and(|m| m.features.contains(&Feature::HighAvailability)),
+                        Conflict,
+                        &fp,
+                        "HA control requires explicit HA capability",
+                    );
+                }
+                InterfaceKind::Provider { .. } => {
+                    c.require(
+                        mode.is_some_and(|m| m.features.contains(&Feature::Routing)),
+                        Conflict,
+                        &fp,
+                        "provider handoff requires routing capability",
+                    );
+                }
+                InterfaceKind::Attachment { domain } => {
+                    c.require(
+                        domains.get(domain).is_some_and(|g| g.site == d.site),
+                        UnknownReference,
+                        &fp,
+                        "attachment domain must exist in the device site",
+                    );
+                    c.require(
+                        mode.is_some_and(|m| m.features.contains(&Feature::Routing)),
+                        Conflict,
+                        &fp,
+                        "routed Ethernet attachment requires routing capability",
+                    );
                 }
                 InterfaceKind::Access { domain } => {
                     c.require(
@@ -364,7 +446,16 @@ pub(super) fn validate(
                     &p,
                     "routed link endpoints need distinct hosts in the same subnet",
                 ),
-                (InterfaceKind::Access { domain: a }, InterfaceKind::Access { domain: b }) => c
+                (InterfaceKind::HaControl { peer: a }, InterfaceKind::HaControl { peer: b }) => c
+                    .require(
+                        a == &l.to.device && b == &l.from.device,
+                        Conflict,
+                        &p,
+                        "HA cable must join reciprocal declared peers",
+                    ),
+                (InterfaceKind::Attachment { domain: a }, InterfaceKind::Access { domain: b })
+                | (InterfaceKind::Access { domain: a }, InterfaceKind::Attachment { domain: b })
+                | (InterfaceKind::Access { domain: a }, InterfaceKind::Access { domain: b }) => c
                     .require(
                         a == b,
                         Conflict,
@@ -404,7 +495,7 @@ pub(super) fn validate(
             "bundle needs 2-256 distinct links",
         );
         let mut pair = None;
-        let mut lacp_profile = None;
+        let mut lacp_profiles = BTreeMap::new();
         for id in b.links.iter().take(256) {
             c.require(
                 bundled_links.insert(id),
@@ -453,15 +544,17 @@ pub(super) fn validate(
                     if let Some(iface) = interfaces.get(&(&ep.device, &ep.interface)) {
                         match b.kind {
                             BundleKind::Lacp => {
-                                c.require(matches!(iface.kind,InterfaceKind::Access{..}|InterfaceKind::Trunk{..}),Conflict,&p,"initial LACP contract bundles L2 interfaces; routed aggregate interfaces are not modeled yet");
+                                c.require(matches!(iface.kind,InterfaceKind::Access{..}|InterfaceKind::Trunk{..}|InterfaceKind::Attachment{..}),Conflict,&p,"initial LACP contract bundles L2 interfaces; routed aggregate interfaces are not modeled yet");
                                 let profile = (&iface.kind, iface.speed_mbps, iface.media);
                                 c.require(
-                                    lacp_profile.is_none_or(|previous| previous == profile),
+                                    lacp_profiles
+                                        .get(&ep.device)
+                                        .is_none_or(|previous| *previous == profile),
                                     Conflict,
                                     &p,
                                     "LACP member configuration must agree",
                                 );
-                                lacp_profile = Some(profile);
+                                lacp_profiles.insert(&ep.device, profile);
                             }
                             BundleKind::Ecmp => c.require(
                                 matches!(iface.kind, InterfaceKind::Routed { .. }),
@@ -476,6 +569,8 @@ pub(super) fn validate(
         }
     }
     super::logical::validate(n, &zones, &devices, &interfaces, &mut c);
+    super::forwarding_validate::validate(n, catalog, &mut c);
+    super::engineering_validate::validate(n, &mut c);
     c.finish()
 }
 

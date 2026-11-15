@@ -20,6 +20,13 @@ pub fn assign(
     request: &SelectionRequest,
     catalog: &CatalogSnapshot,
 ) -> Result<Assignment, SelectionError> {
+    assign_checked(request, catalog, &mut |_| Ok(true))
+}
+pub(crate) fn assign_checked(
+    request: &SelectionRequest,
+    catalog: &CatalogSnapshot,
+    accept: &mut dyn FnMut(&[SelectedDevice]) -> Result<bool, SelectionError>,
+) -> Result<Assignment, SelectionError> {
     validate_request(request)?;
     let mut requirements: Vec<_> = request.devices.iter().collect();
     requirements.sort_by_key(|r| &r.id);
@@ -58,9 +65,15 @@ pub fn assign(
         best: None,
         visited: 0,
         limit: request.max_states,
+        accept,
+        deadline: std::time::Instant::now() + std::time::Duration::from_secs(15),
     };
     search.visit(&mut Vec::new())?;
-    let (score, devices) = search.best.expect("nonempty complete candidate product");
+    let (score, devices) = search.best.ok_or_else(|| {
+        SelectionError::Infeasible(
+            "no hard-valid assignment in this fixed candidate product".into(),
+        )
+    })?;
     Ok(Assignment {
         catalog_version: catalog.version().clone(),
         devices,
@@ -121,15 +134,20 @@ fn validate_request(request: &SelectionRequest) -> Result<(), SelectionError> {
     }
     Ok(())
 }
-struct Search<'a> {
+struct Search<'a, 'b> {
     requirements: &'a [&'a DeviceRequirement],
     choices: &'a [Vec<Candidate>],
     best: Option<(AssignmentScore, Vec<SelectedDevice>)>,
     visited: u64,
     limit: u64,
+    accept: &'b mut dyn FnMut(&[SelectedDevice]) -> Result<bool, SelectionError>,
+    deadline: std::time::Instant,
 }
-impl Search<'_> {
+impl Search<'_, '_> {
     fn visit(&mut self, selected: &mut Vec<SelectedDevice>) -> Result<(), SelectionError> {
+        if std::time::Instant::now() >= self.deadline {
+            return Err(SelectionError::Timeout);
+        }
         if self.visited >= self.limit {
             return Err(SelectionError::SearchExhausted {
                 visited: self.visited,
@@ -162,7 +180,13 @@ impl Search<'_> {
         }
         if selected.len() == self.requirements.len() {
             if self.best.as_ref().is_none_or(|(best, _)| &current < best) {
-                self.best = Some((current, selected.clone()));
+                let accepted = (self.accept)(selected)?;
+                if std::time::Instant::now() >= self.deadline {
+                    return Err(SelectionError::Timeout);
+                }
+                if accepted {
+                    self.best = Some((current, selected.clone()));
+                }
             }
             return Ok(());
         }
@@ -179,7 +203,7 @@ impl Search<'_> {
         Ok(())
     }
 }
-pub(super) fn score(devices: &[SelectedDevice]) -> AssignmentScore {
+pub(crate) fn score(devices: &[SelectedDevice]) -> AssignmentScore {
     let mut groups: BTreeMap<DeviceRole, BTreeSet<&ArchetypeId>> = BTreeMap::new();
     for d in devices {
         groups
