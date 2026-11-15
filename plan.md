@@ -614,3 +614,18 @@ staged publication and recovery contracts. No services have been provisioned.
 The initial [hosted job lifecycle contract](docs/contracts/hosted-jobs-v1.md) defines
 tenant ownership, transactional admission, attempt fencing, cancellation, staged
 publication and recovery acceptance cases. Runtime implementation remains pending.
+
+## Database/admission checkpoint — 2026-11-15
+
+- [x] Initial SQLx migrations: users, tenant memberships/quotas, catalogs, projects,
+  jobs, attempts, immutable revisions/artifacts and append-only admin audit records.
+- [x] Bounded prepared requests and atomic authorization/idempotency/head/catalog/
+  quota checks with job insertion and pgmq dispatch.
+- [x] Real PostgreSQL/pgmq integration cases and a dedicated CI gate.
+
+See [ADR 0004](docs/decisions/0004-transactional-admission.md) and
+[database acceptance](docs/testing/database-admission.md). No hosted deployment,
+HTTP listener, authentication/provisioning flow or worker execution is implied.
+Next: authenticated Axum admission/status boundaries, then worker lease/fencing
+and supervised execution with staged publication. Operational limits and auth
+flows must be settled before the corresponding runtime behavior.

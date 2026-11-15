@@ -1,0 +1,40 @@
+name: Backend PostgreSQL admission
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: labyrinth_test
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: labyrinth_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U labyrinth_test -d labyrinth_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Install pinned pgmq SQL extension
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          bash scripts/fetch-pgmq-test-extension.sh "$RUNNER_TEMP/pgmq"
+          docker cp "$RUNNER_TEMP/pgmq/." "$POSTGRES_CONTAINER:/usr/share/postgresql/17/extension/"
+      - name: Install Rust
+        run: rustup toolchain install 1.95.0 --profile minimal --component clippy --component rustfmt
+      - name: Compile and lint database tests
+        run: cargo +1.95.0 clippy --workspace --all-targets --all-features --locked -- -D warnings
+      - name: Real PostgreSQL migrations and admission tests
+        env:
+          LABYRINTH_TEST_DATABASE_URL: postgres://labyrinth_test:local-test-only@127.0.0.1:5432/labyrinth_test
+        run: cargo +1.95.0 test -p labyrinth-api --features postgres-tests --locked

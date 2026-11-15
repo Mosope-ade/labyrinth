@@ -8,6 +8,9 @@ role, connection, placement, L2 and HA requirements for independent engine stage
 ## Entry points
 
 - `intent::parse_json` / `intent::resolve`: validated readiness or explicit clarification.
+- `artifacts::validate_options`: cheap admission checks, not feasibility proof.
+- `artifacts::canonical_requirements` / `canonical_provenance`: the same stable bytes
+  used by packages and hosted request identity.
 - `artifacts::generate`: stateless generation through selection, allocation, synthesis,
   verification and package assembly. An incremental intent cannot use this entry point.
 - `BaseRevision::from_verified` / `BaseRevision::load_saved`: validated immutable base

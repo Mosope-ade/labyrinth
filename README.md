@@ -31,7 +31,7 @@ storage, product CLI, optional AI clarification, GUI and admin UI remain later w
 - `catalog/`: versioned archetype YAML, schemas and catalog bundle metadata.
 - `schemas/`: generated public intent/model/options/report/package contracts; API contracts follow.
 - `tests/`: cross-component tests, scenario fixtures and independent reference models.
-- `infra/`: future deployment/local service definitions; no providers selected yet.
+- `infra/`: deployment/local service definitions follow ADR 0003; no hosted services provisioned.
 - `docs/`: architecture decisions and contract documentation.
 
 API, worker and CLI currently have library targets only. Runnable entrypoints will
@@ -64,3 +64,7 @@ security, scalability, reliability and code-review requirements from the first s
 Next after core acceptance: hosted asynchronous backend contracts and execution,
 including tenant isolation, durable revisions/jobs, storage and authentication.
 The core itself requires no AI key, HTTP, database or services.
+
+Hosted persistence now includes initial SQLx migrations and atomic PostgreSQL/pgmq
+job admission. See [API setup and tests](api/README.md). HTTP/authentication and
+worker execution remain unfinished.

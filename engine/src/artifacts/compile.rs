@@ -15,27 +15,7 @@ pub(super) fn compile(
     options: &GenerationOptions,
     pins: Option<&PinnedConstraints>,
 ) -> Result<VerifiedPackage, GenerationError> {
-    crate::pipeline::validate_addressing(intent, &options.addressing)?;
-    let limits = &options.logical.routing_limits;
-    if limits.max_search_states == 0
-        || limits.max_search_states > 1_000_000
-        || limits.max_paths_per_demand == 0
-        || limits.max_paths_per_demand > 256
-        || limits.timeout_ms == 0
-        || limits.timeout_ms > 15_000
-    {
-        return Err(GenerationError::Routing(
-            crate::routing::RoutingError::InvalidLimits,
-        ));
-    }
-    if options.verification.max_scenarios > 4096
-        || options.verification.max_service_classes == 0
-        || options.verification.max_service_classes > 1_000_000
-    {
-        return Err(GenerationError::Configuration(
-            "verification limits exceed the supported bounds".into(),
-        ));
-    }
+    super::validate_options(intent, options)?;
     let mut attempts = Vec::new();
     let mut bottlenecks = Vec::new();
     let mut last = None;

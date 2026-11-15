@@ -1,6 +1,7 @@
 # Hosted job lifecycle — V1 implementation contract
 
-Status: implementation contract; no hosted endpoints or persistence implemented yet.
+Status: initial migrations and transactional admission implemented and tested.
+HTTP, worker leasing/execution, storage publication and recovery remain pending.
 Provider direction: [ADR 0003](../decisions/0003-hosted-infrastructure.md).
 
 ## Ownership and records
@@ -89,3 +90,10 @@ artifact bytes: object retention/restore must be tested with revision metadata.
 
 Authentication flow, numeric quotas/timeouts/retention and admin role provisioning
 need their own contracts before corresponding runtime behavior is implemented.
+
+## Admission persistence slice — 2026-11-15
+
+See [ADR 0004](../decisions/0004-transactional-admission.md) for the restricted
+role/function boundary and [database test evidence](../testing/database-admission.md).
+The admission library uses a server-authenticated subject; no JWT verifier or public
+route exists yet. Hosted revision UUIDs map to core `rev-<canonical UUID>` IDs.

@@ -168,3 +168,45 @@ pub(crate) fn from_allocation(
         options: options.clone(),
     })
 }
+
+/// Stable effective requirements used by packages and hosted idempotency checks.
+pub fn canonical_requirements(intent: &ResolvedIntent) -> Result<Vec<u8>, GenerationError> {
+    encode::requirements(intent)
+}
+/// Stable identity-based provenance; provided/default distinctions remain observable.
+pub fn canonical_provenance(intent: &ResolvedIntent) -> Result<Vec<u8>, GenerationError> {
+    encode::provenance(intent)
+}
+/// Cheap option admission checks. Passing does not establish topology feasibility.
+pub fn validate_options(
+    intent: &ResolvedIntent,
+    options: &GenerationOptions,
+) -> Result<(), GenerationError> {
+    crate::pipeline::validate_addressing(intent, &options.addressing)?;
+    let limits = &options.logical.routing_limits;
+    if limits.max_search_states == 0
+        || limits.max_search_states > 1_000_000
+        || limits.max_paths_per_demand == 0
+        || limits.max_paths_per_demand > 256
+        || limits.timeout_ms == 0
+        || limits.timeout_ms > 15_000
+    {
+        return Err(GenerationError::Routing(
+            crate::routing::RoutingError::InvalidLimits,
+        ));
+    }
+    if options.verification.max_scenarios > 4096
+        || options.verification.max_service_classes == 0
+        || options.verification.max_service_classes > 1_000_000
+    {
+        return Err(GenerationError::Configuration(
+            "verification limits exceed the supported bounds".into(),
+        ));
+    }
+    if options.selection_search_states == 0 || options.selection_search_states > 1_000_000 {
+        return Err(GenerationError::Configuration(
+            "selection search states must be 1..=1000000".into(),
+        ));
+    }
+    Ok(())
+}
