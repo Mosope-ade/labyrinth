@@ -1,8 +1,9 @@
 # Hosted API application boundary
 
-Implemented: repository-owned SQLx migrations and a bounded admission library backed
-by PostgreSQL/pgmq. No HTTP listener, JWT verifier, signup/provisioning workflow, worker
-claim API or artifact publication/download endpoint is implemented yet.
+Implemented: repository-owned SQLx migrations, PostgreSQL/pgmq admission, Supabase
+asymmetric JWT verification, authenticated Axum submission/status routes and a runnable
+server. Signup/provisioning, worker claim/execution and artifact publication/download
+endpoints remain pending. See the [HTTP contract](../docs/contracts/http-jobs-v1.md).
 
 `jobs::PreparedAdmission::new` validates structured intent and options using the core,
 normalizes a versioned request identity and preserves defaults/provenance.
@@ -53,3 +54,27 @@ See [database test setup](../docs/testing/database-admission.md).
 See [job contract](../docs/contracts/hosted-jobs-v1.md) and
 [admission ADR](../docs/decisions/0004-transactional-admission.md) for authorization,
 locking, idempotency, revision identities and remaining worker obligations.
+
+## Run the authenticated server
+
+Configure the required variables in [the API template](.env.example) through your
+shell or secret manager; the process does not auto-load `.env` files. Then run:
+
+```sh
+cargo run -p labyrinth-api --locked
+```
+
+Use an asymmetric Supabase project issuer and an unprivileged LOGIN with only
+`labyrinth_api` membership. The server rejects administrative database logins, requires
+verified TLS for hosted TCP database connections, selects the restricted role on each
+connection and applies bounded statement/lock/pool acquisition times. Local development
+can use a private Unix socket. Apply migrations separately with their owner before
+startup. The server never provisions membership or promotes an authenticated user.
+
+`POST /v1/tenants/{tenant}/projects/{project}/jobs` admits structured JSON;
+`GET /v1/tenants/{tenant}/projects/{project}/jobs/{job}` polls durable scoped state.
+One bearer access token is required. Process liveness is public at `/health/live`.
+No auth bypass, cookie session, wildcard CORS, refresh/login endpoint or synchronous
+generator is installed. See [authentication ADR](../docs/decisions/0005-authenticated-job-http.md)
+for cache/rotation and session-revocation limits. Supabase/Render connectivity and
+production configuration still need deployment acceptance.

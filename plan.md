@@ -629,3 +629,19 @@ HTTP listener, authentication/provisioning flow or worker execution is implied.
 Next: authenticated Axum admission/status boundaries, then worker lease/fencing
 and supervised execution with staged publication. Operational limits and auth
 flows must be settled before the corresponding runtime behavior.
+
+## Authenticated HTTP checkpoint — 2026-11-15
+
+- [x] Supabase ES256/RS256 user-token verifier with bounded, rotating JWKS cache.
+- [x] Authenticated Axum job admission and scoped authoritative status polling.
+- [x] Private catalog/status read functions with current membership/suspension checks.
+- [x] Explicit bounded server configuration, TLS database connections, restricted
+  runtime role, payload/concurrency/deadline guards and redacted request telemetry.
+- [x] Signed-token/live HTTP/PostgreSQL tests, invalid-input and failure tests.
+
+See [HTTP contract](docs/contracts/http-jobs-v1.md) and
+[ADR 0005](docs/decisions/0005-authenticated-job-http.md). Login/provisioning,
+scripted CLI credentials, frontend CORS origins and hosted deployment remain pending.
+Next runtime slice: worker claim leases/fencing, supervised core execution and
+staged artifact publication. Numeric job CPU/memory/time/retry limits must be settled
+before worker execution; existing HTTP examples are not production workload SLOs.

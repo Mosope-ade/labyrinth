@@ -61,7 +61,8 @@ CHECK constraint on the real queue table, then removes it before testing retry.
 
 ## Remaining hosted acceptance
 
-JWT verification, provisioning APIs, HTTP contracts, leases/fencing/recovery, hard
+JWT verification and authenticated HTTP admission/status are covered in
+[HTTP acceptance](authenticated-http.md). Provisioning APIs, leases/fencing/recovery, hard
 process limits, staged storage/publication, cancellation, cleanup/retention and admin
 operations remain future slices. Admission is not authorization for direct database
 access from an end-user client. Pool/timeouts, numeric production quotas and storage

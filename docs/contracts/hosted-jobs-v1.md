@@ -1,7 +1,8 @@
 # Hosted job lifecycle — V1 implementation contract
 
 Status: initial migrations and transactional admission implemented and tested.
-HTTP, worker leasing/execution, storage publication and recovery remain pending.
+Authenticated HTTP submission/status is implemented; worker leasing/execution,
+storage publication and recovery remain pending.
 Provider direction: [ADR 0003](../decisions/0003-hosted-infrastructure.md).
 
 ## Ownership and records
@@ -95,5 +96,5 @@ need their own contracts before corresponding runtime behavior is implemented.
 
 See [ADR 0004](../decisions/0004-transactional-admission.md) for the restricted
 role/function boundary and [database test evidence](../testing/database-admission.md).
-The admission library uses a server-authenticated subject; no JWT verifier or public
-route exists yet. Hosted revision UUIDs map to core `rev-<canonical UUID>` IDs.
+The admission library uses a server-authenticated subject; the JWT verifier and
+routes are documented in [HTTP V1](http-jobs-v1.md). Hosted revision UUIDs map to core `rev-<canonical UUID>` IDs.

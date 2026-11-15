@@ -65,6 +65,7 @@ Next after core acceptance: hosted asynchronous backend contracts and execution,
 including tenant isolation, durable revisions/jobs, storage and authentication.
 The core itself requires no AI key, HTTP, database or services.
 
-Hosted persistence now includes initial SQLx migrations and atomic PostgreSQL/pgmq
-job admission. See [API setup and tests](api/README.md). HTTP/authentication and
-worker execution remain unfinished.
+Hosted API now includes SQLx migrations, atomic PostgreSQL/pgmq admission,
+Supabase asymmetric token verification and authenticated Axum submission/status.
+See [API setup and tests](api/README.md). Login/provisioning, worker execution and
+artifact publication remain unfinished.

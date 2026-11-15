@@ -70,3 +70,6 @@ Use transaction-safe SQL and avoid session authorization state with pooled conne
 - [PostgreSQL schema trust](https://www.postgresql.org/docs/current/ddl-schemas.html)
 - [Supabase pgmq](https://supabase.com/docs/guides/queues/pgmq)
 - [SQLx migrations](https://docs.rs/sqlx/0.8.6/sqlx/migrate/index.html)
+
+ADR 0005 extends this function-only runtime interface with authorized catalog/status
+reads. Direct runtime table grants remain absent.

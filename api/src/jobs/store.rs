@@ -8,6 +8,8 @@ use uuid::Uuid;
 pub enum AdmissionError {
     #[error("invalid input: {0}")]
     InvalidInput(String),
+    #[error("requirements failed validation")]
+    InvalidRequirements(labyrinth_engine::diagnostics::ValidationErrors),
     #[error("requirements need clarification")]
     NeedsClarification(Vec<MissingField>),
     #[error("not permitted")]

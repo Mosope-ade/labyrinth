@@ -307,7 +307,8 @@ download authorization is checked before issuing access. Network design data is 
 
 Acceptance: user A cannot read/mutate/download/subscribe to user B's resources by ID;
 logs omit sensitive payloads; deleted access cannot be bypassed through public object URLs.
-Exact authentication strategy remains a pre-implementation decision.
+User-access-token verification and HTTP authorization are defined in ADR 0005.
+Interactive login/refresh, scripted credentials and provisioning remain staged decisions.
 
 ### FR-14 — Optional AI
 
