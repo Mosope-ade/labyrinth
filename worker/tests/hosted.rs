@@ -162,6 +162,8 @@ async fn hosted_generation_upload_failure_recovery_publication_and_incremental_u
             .unwrap()
     );
     assert_eq!(state(&db, job).await, "retry_wait");
+    let report:Option<String>=sqlx::query_scalar("SELECT diagnostic_code FROM labyrinth.attempts WHERE tenant_id=$1 AND job_id=$2 ORDER BY attempt_number DESC LIMIT 1").bind(tenant).bind(job).fetch_one(&db).await.unwrap();
+    assert_eq!(report.as_deref(), Some("storage_unavailable"));
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM labyrinth.revisions")
         .fetch_one(&db)
         .await

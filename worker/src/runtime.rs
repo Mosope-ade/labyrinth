@@ -181,13 +181,21 @@ pub async fn once_with_store(
     };
     if let Err(error) = result {
         if !matches!(error, Error::LeaseLost) {
-            let transient = matches!(error, Error::Storage | Error::Io(_) | Error::Database(_));
+            let code = match error {
+                Error::Invalid => "invalid_input",
+                Error::Deterministic => "engine_rejected",
+                Error::ResourceLimit => "resource_limit",
+                Error::Storage => "storage_unavailable",
+                Error::Database(_) => "database_unavailable",
+                Error::Io(_) => "process_io",
+                Error::LeaseLost => unreachable!(),
+            };
             let _: bool =
-                sqlx::query_scalar("SELECT labyrinth.finish_attempt($1,$2,$3,$4,$5,$6,$7)")
+                sqlx::query_scalar("SELECT labyrinth.finish_attempt_report($1,$2,$3,$4,$5,$6,$7)")
                     .bind(h.tenant_id)
                     .bind(h.job_id)
                     .bind(h.fence)
-                    .bind(transient)
+                    .bind(code)
                     .bind(l.attempts)
                     .bind(l.retry_first_secs)
                     .bind(l.retry_second_secs)

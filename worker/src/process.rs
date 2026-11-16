@@ -52,6 +52,9 @@ pub async fn run(
             return Err(Error::ResourceLimit);
         }
         let status = child.wait().await?;
+        if status.code() == Some(3) {
+            return Err(Error::ResourceLimit);
+        }
         if status.code() == Some(2) {
             return Err(Error::Deterministic);
         }

@@ -1,4 +1,5 @@
 //! Authenticated, bounded job submission and authoritative status polling.
+mod diagnostics;
 mod discovery;
 mod error;
 mod onboarding;
@@ -94,6 +95,10 @@ pub fn router_with_onboarding(
         timeout: limits.request_timeout,
     };
     let protected = Router::new()
+        .route(
+            "/v1/tenants/{tenant}/projects/{project}/jobs/{job}/attempts",
+            get(diagnostics::attempts),
+        )
         .route("/v1/me", get(onboarding::identity))
         .route(
             "/v1/onboarding/personal-workspace",

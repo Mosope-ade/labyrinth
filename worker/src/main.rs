@@ -20,8 +20,10 @@ fn child() -> Result<(), Error> {
 }
 fn main() {
     if std::env::args().nth(1).as_deref() == Some("--engine-child") {
-        if child().is_err() {
-            std::process::exit(2)
+        match child() {
+            Ok(()) => {}
+            Err(Error::ResourceLimit) => std::process::exit(3),
+            Err(_) => std::process::exit(2),
         }
         return;
     }

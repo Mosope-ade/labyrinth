@@ -100,3 +100,6 @@ active jobs and 50 projects for a new personal tenant. Read
 [provider setup](../docs/runbooks/auth-onboarding.md) before hosted rollout. Supabase
 and the GUI/CLI auth clients own magic-link/PKCE login, refresh and logout; this API
 does not proxy or persist refresh credentials.
+
+[Attempt diagnostics](../docs/contracts/job-diagnostics-v1.md) expose safe attempt
+history and retry scheduling. No raw worker errors or storage/runtime keys are returned.

@@ -71,3 +71,12 @@ background task removes only old unsuccessful, unreferenced attempt inventories;
 published artifacts are preserved. See [cleanup V1](orphan-cleanup-v1.md) and
 [acceptance](../testing/orphan-cleanup.md). Earlier deferred-cleanup notes are
 superseded by this extension; published revision retention remains undecided.
+
+## Diagnostic reporting extension — 2026-11-16
+
+Workers now finalize failures through finish_attempt_report, persisting an allowlisted
+public category in the same transaction as retry/terminal state. Child exit code 3
+preserves resource exhaustion (including cooperative search/verification budgets)
+across process boundaries; exit 2 remains generic rejection. No raw exception text
+is persisted. See [diagnostic contract](job-diagnostics-v1.md). Earlier worker
+finalization functions remain for rolling compatibility and legacy attempts.

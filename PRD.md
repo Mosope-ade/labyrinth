@@ -706,3 +706,11 @@ resource API does not handle passwords, refresh tokens or client PKCE verifiers.
 See [ADR 0007](docs/decisions/0007-personal-workspace-onboarding.md) and
 [auth/onboarding V1](docs/contracts/auth-onboarding-v1.md). Provider/client login
 implementation and live acceptance remain separate from this completed backend slice.
+
+Hosted attempt diagnostics now expose safe failure categories and retry timing.
+Execution lifecycle state failed does not imply proven infeasibility; resource/lease
+exhaustion is explicitly inconclusive in the diagnostic assurance outcome. Generic
+engine rejection does not claim a proof. The worker preserves cooperative search
+exhaustion through its subprocess boundary and records classifications atomically
+under its current fence. See [attempt diagnostics V1](docs/contracts/job-diagnostics-v1.md).
+Full counterexample transport and diagnostic/history retention remain separate work.

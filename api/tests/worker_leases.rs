@@ -217,14 +217,49 @@ async fn expired_fences_retry_and_atomic_publication() {
     for number in 1..=3 {
         let handle = claim(&worker).await;
         let token: Uuid = serde_json::from_value(handle["fence"].clone()).unwrap();
-        let ok: bool = sqlx::query_scalar("SELECT labyrinth.finish_attempt($1,$2,$3,true,3,10,60)")
+        let ok: bool = sqlx::query_scalar(
+            "SELECT labyrinth.finish_attempt_report($1,$2,$3,'storage_unavailable',3,10,60)",
+        )
+        .bind(tenant)
+        .bind(retry.job_id)
+        .bind(token)
+        .fetch_one(&worker)
+        .await
+        .unwrap();
+        assert!(ok);
+        let diagnostic: String =
+            sqlx::query_scalar("SELECT diagnostic_code FROM labyrinth.attempts WHERE fence=$1")
+                .bind(token)
+                .fetch_one(&db)
+                .await
+                .unwrap();
+        assert_eq!(diagnostic, "storage_unavailable");
+        let repeated: bool = sqlx::query_scalar(
+            "SELECT labyrinth.finish_attempt_report($1,$2,$3,'resource_limit',3,10,60)",
+        )
+        .bind(tenant)
+        .bind(retry.job_id)
+        .bind(token)
+        .fetch_one(&worker)
+        .await
+        .unwrap();
+        assert!(!repeated);
+        let history: Value = sqlx::query_scalar("SELECT labyrinth.job_attempts($1,$2,$3,$4)")
+            .bind(actor)
             .bind(tenant)
+            .bind(project)
             .bind(retry.job_id)
-            .bind(token)
-            .fetch_one(&worker)
+            .fetch_one(&db)
             .await
             .unwrap();
-        assert!(ok);
+        assert_eq!(
+            history.as_array().unwrap().last().unwrap()["retry_scheduled"],
+            number < 3
+        );
+        assert_eq!(
+            history.as_array().unwrap().last().unwrap()["retry_at"].is_null(),
+            number == 3
+        );
         let state: String =
             sqlx::query_scalar("SELECT state FROM labyrinth.jobs WHERE tenant_id=$1 AND id=$2")
                 .bind(tenant)

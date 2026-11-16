@@ -355,7 +355,7 @@ pin conflicts block; stale revisions reject; identical inputs reproduce outputs.
   Postgres/Auth/Storage/Queues and GitHub Releases; see ADR 0003.
 - [ ] Finalize regions, service sizing, auth flows and operational limits before deployment.
 - [ ] Build Axum contracts, tenant isolation, revisions, workers and staged publication.
-- [ ] Add idempotency, leases/recovery, cancellation and enforceable resource limits.
+- [x] Add idempotency, leases/recovery, cancellation and enforceable resource limits.
 - [ ] Define admin RBAC/audit boundaries, operational/AI telemetry, usage reporting,
   catalog draft-validation/promotion APIs and safe user/job administration (FR-20–FR-22).
 Gate: AI-free structured submission → async job → persisted verified revision → download;
@@ -736,3 +736,16 @@ See [ADR 0007](docs/decisions/0007-personal-workspace-onboarding.md),
 [acceptance](docs/testing/auth-onboarding.md). This supersedes the prior pending
 login-method/provisioning/initial-quota decisions. Hosted provider configuration,
 actual email/PKCE/refresh/logout acceptance and GUI/CLI auth clients remain pending.
+
+## Attempt diagnostics checkpoint — 2026-11-16
+
+- [x] Tenant-scoped bounded attempt history with fixed redacted messages/outcomes.
+- [x] Fenced atomic worker failure reporting and durable retry scheduling metadata.
+- [x] Resource/search exhaustion remains inconclusive across the child boundary;
+  generic failure is never asserted to prove network infeasibility.
+- [x] Signed-request/PostgreSQL, retry-fencing, real subprocess and storage-fault tests.
+
+See [contract](docs/contracts/job-diagnostics-v1.md) and
+[acceptance](docs/testing/job-diagnostics.md). Full core counterexample transport,
+overall metadata retention, admin APIs and hosted deployment/restore acceptance
+remain open. No raw diagnostics/exception-text artifact store has been introduced.

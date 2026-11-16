@@ -157,3 +157,7 @@ in still does not provision a tenant or membership.
 Explicit [personal-workspace onboarding](auth-onboarding-v1.md) is now supported after
 provider login. Signing in alone still creates nothing; a deliberate authenticated
 POST provisions the application user, tenant and owner membership atomically.
+
+[Attempt diagnostics V1](job-diagnostics-v1.md) exposes authenticated bounded attempt
+history, safe failure categories and retry timing without private runtime metadata.
+An inconclusive diagnostic is distinct from the job lifecycle's failed state.
