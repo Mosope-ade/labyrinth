@@ -21,3 +21,9 @@ Local checkpoint: **191 passed, 0 failed, 0 ignored** in the locked workspace/al
 suite. Formatting/Clippy, native bounded generation and corruption rejection, shell
 syntax, provider schema validation and credential-safe rejection checks passed.
 Remote container build evidence is intentionally separate from this local checkpoint.
+
+Remote verification found a default-feature lint gap: the storage-loopback test helper
+was compiled without the PostgreSQL tests that use it. Its cfg now matches that test
+feature; no warning suppression was added. Both default and all-feature Clippy gates
+passed locally. Checkout is pinned to the official v7.0.1 revision using Node 24,
+verified from the action's release/tag and action.yml; credentials remain nonpersistent.

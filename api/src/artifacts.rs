@@ -102,7 +102,7 @@ impl ArtifactReader {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "postgres-tests"))]
 impl ArtifactReader {
     pub(crate) fn for_test(origin: &str) -> Self {
         let mut reader =
