@@ -334,11 +334,17 @@ no client contains an alternative generator; CLI V1 generation requires the host
 
 Define automatic cleanup for sensitive artifacts, staging objects, diagnostics, job
 metadata and AI messages. Preserve required catalog snapshots with retained revisions.
-Support project deletion and document backup/deletion windows. Retention rules must
+Support owner-confirmed project deletion with seven days of recovery and immediate
+new-access/publication denial. Retain active published designs until explicit deletion;
+erase unsuccessful job inputs/evidence after 30 days. Preserve the 24-hour orphan
+minimum and 365-day audit minimum. Application-managed backup content expires within
+30 days; provider guarantees require separate verification. Retention rules must
 not remove the only reproducibility inputs of a still-retained design.
 
 Acceptance: expired staging artifacts are inaccessible/cleaned; project deletion
-revokes access; cleanup is recoverable/idempotent. Exact periods are release blockers.
+revokes access; cleanup is recoverable/idempotent. Recovery and deletion must not
+revive old execution fences or resurrect erased content from backups. See the
+retention contract for minimal tombstones and live acceptance limits.
 
 ### FR-17 — Frontend stack and engineering workspace
 
@@ -643,8 +649,9 @@ Before admin mutation endpoints:
   audit retention/access, safe catalog promotion and stalled-job recovery contracts.
 
 Before release:
-- Retention durations, deletion/backup windows, operational SLOs, restore targets and
-  workload limits measured against representative scenarios.
+- Verify enforcement of accepted retention/deletion/backup windows in hosted operation;
+  configure independent ledger durability, backup expiry, operational SLOs, restore
+  targets and workload limits measured against representative scenarios.
 - How reference hardware hints are curated/reviewed without becoming vendor selection.
 
 These decisions refine implementation; they cannot reintroduce vendor-specific
@@ -777,4 +784,21 @@ is immutable, and is suppressed when cancellation wins. Reports exceeding 16 KiB
 are omitted with an explicit truncation marker. Metadata-only admin access grants no
 right to this topology content. Legacy/infrastructure attempts may have null evidence.
 The endpoint and additive migration are documented in the diagnostics contract;
-attempt-history retention remains a separate unresolved policy.
+unsuccessful input/evidence retention and project content erasure follow the accepted
+retention policy; minimal history tombstones remain for fencing and replay safety.
+
+### Accepted retention and recovery implementation
+
+Migration 0016 and the worker implement policy-bound content erasure. Project owners
+confirm deletion by ID; active reads/admission are denied immediately, old worker
+epochs cannot publish, and restoration is limited to seven days. Physical cleanup is
+bounded, leased, retryable and scoped to exact inventories; published artifacts in
+other projects are preserved. Successful active designs do not expire automatically.
+
+Thirty-day unsuccessful payload/evidence erasure includes raw idempotency keys while
+retaining fingerprints for replay protection. Explicit purge also redacts project
+names, releases quota and leaves only minimal immutable identities/fencing inventories
+and mandatory audit metadata. Recovery privileges are isolated from ordinary audit
+maintenance. Backup deletion policy, latest-ledger reconciliation and actual provider
+expiry/restore acceptance are described in the retention contract and runbook; live
+backup automation/provider durability have not been provisioned or verified here.

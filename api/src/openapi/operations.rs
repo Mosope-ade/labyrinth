@@ -9,6 +9,30 @@ pub(super) fn extend(doc: &mut Value) {
     // Request, response and pagination bindings are explicit; authority is checked server-side.
     for (path, method, id, request, result, page) in [
         (
+            "/v1/tenants/{tenant}/projects/{project}/delete",
+            "post",
+            "deleteProject",
+            "ProjectConfirmation",
+            "ProjectLifecycle",
+            "",
+        ),
+        (
+            "/v1/tenants/{tenant}/projects/{project}/restore",
+            "post",
+            "restoreProject",
+            "ProjectConfirmation",
+            "ProjectLifecycle",
+            "",
+        ),
+        (
+            "/v1/tenants/{tenant}/projects/deleted",
+            "get",
+            "deletedProjects",
+            "",
+            "DeletedProjectPage",
+            "uuid",
+        ),
+        (
             evidence_path,
             "get",
             "getAttemptEvidence",

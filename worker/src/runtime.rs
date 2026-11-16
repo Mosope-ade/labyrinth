@@ -123,6 +123,8 @@ async fn execute(
     let files: Files = serde_json::from_slice(&out).map_err(|_| Error::Invalid)?;
     let objects = package::validate(&files, &ctx, cfg.limits.output_bytes)?;
     for object in &objects {
+        // Recheck ownership before each external write, including after process suspension.
+        heartbeat(db, h, &cfg.limits).await?;
         store.put(&object.object_key, &files[&object.name]).await?;
         let stored = store
             .get(&object.object_key, object.size_bytes as usize)

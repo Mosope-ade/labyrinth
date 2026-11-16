@@ -292,8 +292,9 @@ Run non-cooperative solvers in killable execution boundaries; an async timeout a
 must not leave computation consuming resources.
 
 Retention is explicit for published revisions, failed diagnostics, raw AI messages,
-staging objects, job metadata and deletion/backup windows. Exact durations remain a
-release-blocking product/operations decision. Log identifiers/statuses, not sensitive
+staging objects, job metadata and deletion/backup windows. The accepted primary-data
+policy is recorded in docs/contracts/retention-v1.md. Optional AI message retention
+and live backup expiry/restore acceptance remain release gates. Log identifiers/statuses, not sensitive
 intent payloads or topology contents. Redact assessment context and define external
 AI data sharing before enabling it. No device credentials are needed for V1 outputs.
 
@@ -365,7 +366,9 @@ worker/API restart recovery; cross-tenant denial; no partial published package.
 
 - [ ] Ship a separate hosted CLI over the published API contracts.
 - [ ] Add JSON intent parsing/clarification and separate read-only assessment.
-- [ ] Complete retention, deletion, diagnostics and failure behavior.
+- [x] Implement structured diagnostics, policy-bound failed payload erasure and
+  owner-confirmed project deletion/recovery with bounded purge.
+- [ ] Configure and verify live backup expiry/restore and optional AI-message retention.
 Gate: CLI covers the full hosted engineering workflow; provider failure cannot break
 structured generation; assessment cannot mutate a design; deletion/cleanup verified.
 
@@ -846,3 +849,24 @@ See [diagnostics contract](docs/contracts/job-diagnostics-v1.md). Overall histor
 retention/deletion, hosted provider acceptance, load/restore drills and optional AI
 telemetry remain open. This completes the previously deferred bounded counterexample
 transport, not unrestricted storage of arbitrarily large solver reports.
+
+## Retention and project lifecycle checkpoint — 2026-11-16
+
+- [x] Approved published-until-owner-delete policy, 30-day unsuccessful input/evidence
+  retention, seven-day project recovery and 30-day application-backup policy.
+- [x] Owner-confirmed delete/restore/discovery endpoints, current-access denial and
+  lifecycle epochs that invalidate old worker execution even after restoration.
+- [x] Bounded cancellation, queue acknowledgment, payload/key erasure and leased
+  explicit-project object purge with partial-failure/late-write recovery.
+- [x] Preserve active published designs, shared catalogs, immutable identity records
+  and minimum audit history; release project quota after complete content purge.
+- [x] Separate offline recovery role for paged lifecycle-ledger export and monotonic
+  restore reconciliation; API/worker/routine audit maintenance cannot invoke it.
+- [x] Migration-upgrade, HTTP/OpenAPI, real generation/storage and adversarial policy
+  tests: 202 passed locally with no skipped tests or relaxed engine deadlines.
+
+See [ADR 0009](docs/decisions/0009-retention-and-project-lifecycle.md),
+[contract](docs/contracts/retention-v1.md), [runbook](docs/runbooks/retention-and-recovery.md)
+and [tests](docs/testing/retention.md). Live backup scheduling, independent ledger
+durability, provider expiry and hosted restore drills remain deployment acceptance
+work; no hosted resources or backups were provisioned by this change.

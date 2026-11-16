@@ -58,11 +58,20 @@ async fn serve() -> Result<(), Error> {
         loop {
             interval.tick().await;
             for _ in 0..16 {
+                let retention_work =
+                    match labyrinth_worker::retention::once(&cleanup_db, &cfg.storage).await {
+                        Ok(work) => work,
+                        Err(_) => {
+                            eprintln!("retention_cleanup_failed");
+                            break;
+                        }
+                    };
                 match labyrinth_worker::cleanup::once(&cleanup_db, &cfg.storage, cleanup_window)
                     .await
                 {
                     Ok(true) => {}
-                    Ok(false) => break,
+                    Ok(false) if !retention_work => break,
+                    Ok(false) => {}
                     Err(_) => {
                         eprintln!("orphan_cleanup_failed");
                         break;

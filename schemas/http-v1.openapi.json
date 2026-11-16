@@ -1035,6 +1035,60 @@
         ],
         "type": "object"
       },
+      "DeletedProject": {
+        "additionalProperties": false,
+        "properties": {
+          "deleted_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "project_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "purge_after": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "deleted_at",
+          "name",
+          "project_id",
+          "purge_after"
+        ],
+        "type": "object"
+      },
+      "DeletedProjectPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DeletedProject"
+            },
+            "type": "array"
+          },
+          "next_after": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_after"
+        ],
+        "type": "object"
+      },
       "Diagnostic": {
         "additionalProperties": false,
         "properties": {
@@ -3403,6 +3457,65 @@
         ],
         "type": "object"
       },
+      "ProjectConfirmation": {
+        "additionalProperties": false,
+        "properties": {
+          "confirm_project": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "confirm_project"
+        ],
+        "type": "object"
+      },
+      "ProjectLifecycle": {
+        "additionalProperties": false,
+        "properties": {
+          "deleted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "purge_after": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "enum": [
+              "active",
+              "deleted",
+              "purged"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "deleted_at",
+          "project_id",
+          "purge_after",
+          "state"
+        ],
+        "type": "object"
+      },
       "ProjectPage": {
         "additionalProperties": false,
         "properties": {
@@ -5180,6 +5293,62 @@
         }
       }
     },
+    "/v1/tenants/{tenant}/projects/deleted": {
+      "get": {
+        "operationId": "deletedProjects",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedProjectPage"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        }
+      }
+    },
     "/v1/tenants/{tenant}/projects/{project}": {
       "get": {
         "operationId": "getProject",
@@ -5209,6 +5378,63 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Project"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenant}/projects/{project}/delete": {
+      "post": {
+        "operationId": "deleteProject",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectConfirmation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectLifecycle"
                 }
               }
             },
@@ -5591,6 +5817,63 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CancelledJob"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenant}/projects/{project}/restore": {
+      "post": {
+        "operationId": "restoreProject",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectConfirmation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectLifecycle"
                 }
               }
             },

@@ -506,6 +506,379 @@ async fn hosted_generation_upload_failure_recovery_publication_and_incremental_u
     .await
     .unwrap();
     assert_eq!(revisions, 0);
+    // Retention never erases a young failed payload or any active published design.
+    let pruned: i32 = sqlx::query_scalar("SELECT labyrinth.prune_job_payloads(100)")
+        .fetch_one(&worker)
+        .await
+        .unwrap();
+    assert_eq!(pruned, 0);
+    let mut age = db.begin().await.unwrap();
+    sqlx::query("SET LOCAL session_replication_role=replica")
+        .execute(&mut *age)
+        .await
+        .unwrap();
+    sqlx::query("UPDATE labyrinth.jobs SET ended_at=clock_timestamp()-interval '31 days' WHERE tenant_id=$1 AND id=$2").bind(tenant).bind(evidence_job).execute(&mut *age).await.unwrap();
+    age.commit().await.unwrap();
+    let pruned: i32 = sqlx::query_scalar("SELECT labyrinth.prune_job_payloads(100)")
+        .fetch_one(&worker)
+        .await
+        .unwrap();
+    assert_eq!(pruned, 1);
+    let payload: serde_json::Value =
+        sqlx::query_scalar("SELECT requirements FROM labyrinth.jobs WHERE tenant_id=$1 AND id=$2")
+            .bind(tenant)
+            .bind(evidence_job)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+    assert_eq!(payload, serde_json::json!({}));
+    let evidence: Option<serde_json::Value> = sqlx::query_scalar(
+        "SELECT engine_evidence FROM labyrinth.attempts WHERE tenant_id=$1 AND job_id=$2",
+    )
+    .bind(tenant)
+    .bind(evidence_job)
+    .fetch_one(&db)
+    .await
+    .unwrap();
+    assert!(evidence.is_none());
+    let payload: serde_json::Value =
+        sqlx::query_scalar("SELECT requirements FROM labyrinth.jobs WHERE tenant_id=$1 AND id=$2")
+            .bind(tenant)
+            .bind(job)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+    assert_ne!(payload, serde_json::json!({}));
+
+    let erased_key:bool=sqlx::query_scalar("SELECT idempotency_key IS NULL AND idempotency_key_sha256 IS NOT NULL FROM labyrinth.jobs WHERE tenant_id=$1 AND id=$2").bind(tenant).bind(evidence_job).fetch_one(&db).await.unwrap();
+    assert!(erased_key);
+    let replay = admit(
+        &db,
+        &PreparedAdmission::new(
+            AdmissionContext {
+                actor_id: actor,
+                tenant_id: tenant,
+                project_id: evidence_project,
+                expected_head: None,
+            },
+            "evidence",
+            RAW,
+            &options,
+            &catalog,
+        )
+        .unwrap(),
+    )
+    .await
+    .unwrap();
+    assert!(replay.replayed);
+    assert_eq!(replay.job_id, evidence_job);
+    // A second live project proves explicit purge cannot touch unrelated published bytes.
+    store.fail.store(false, Ordering::SeqCst);
+    store.corrupt.store(false, Ordering::SeqCst);
+    let preserved_project = Uuid::new_v4();
+    sqlx::query("INSERT INTO labyrinth.projects(tenant_id,id,name) VALUES($1,$2,'preserve')")
+        .bind(tenant)
+        .bind(preserved_project)
+        .execute(&db)
+        .await
+        .unwrap();
+    let preserved_job = admit(
+        &db,
+        &PreparedAdmission::new(
+            AdmissionContext {
+                actor_id: actor,
+                tenant_id: tenant,
+                project_id: preserved_project,
+                expected_head: None,
+            },
+            "retention-preserved",
+            RAW,
+            &Default::default(),
+            &catalog,
+        )
+        .unwrap(),
+    )
+    .await
+    .unwrap()
+    .job_id;
+    assert!(
+        runtime::once_with_store(&worker, &cfg, &store)
+            .await
+            .unwrap()
+    );
+    assert_eq!(state(&db, preserved_job).await, "succeeded");
+    let keys: Vec<String> = sqlx::query_scalar(
+        "SELECT object_key FROM labyrinth.artifacts WHERE tenant_id=$1 AND project_id=$2",
+    )
+    .bind(tenant)
+    .bind(preserved_project)
+    .fetch_all(&db)
+    .await
+    .unwrap();
+    let protected: Files = {
+        let files = store.files.lock().unwrap();
+        keys.iter().map(|k| (k.clone(), files[k].clone())).collect()
+    };
+    sqlx::query(
+        "INSERT INTO labyrinth.project_creations VALUES($1,$2,'hosted-project',$3,'hosted')",
+    )
+    .bind(tenant)
+    .bind(actor)
+    .bind(project)
+    .execute(&db)
+    .await
+    .unwrap();
+    let interrupted_project = Uuid::new_v4();
+    sqlx::query("INSERT INTO labyrinth.projects(tenant_id,id,name) VALUES($1,$2,'interrupt')")
+        .bind(tenant)
+        .bind(interrupted_project)
+        .execute(&db)
+        .await
+        .unwrap();
+    let interrupted = admit(
+        &db,
+        &PreparedAdmission::new(
+            AdmissionContext {
+                actor_id: actor,
+                tenant_id: tenant,
+                project_id: interrupted_project,
+                expected_head: None,
+            },
+            "delete-in-flight",
+            RAW,
+            &Default::default(),
+            &catalog,
+        )
+        .unwrap(),
+    )
+    .await
+    .unwrap()
+    .job_id;
+    let interrupt = DeleteAfterFirstWrite {
+        store: &store,
+        db: &db,
+        actor,
+        tenant,
+        project: interrupted_project,
+        writes: std::sync::atomic::AtomicUsize::new(0),
+    };
+    assert!(
+        runtime::once_with_store(&worker, &cfg, &interrupt)
+            .await
+            .unwrap()
+    );
+    assert_eq!(interrupt.writes.load(Ordering::SeqCst), 1);
+    assert_eq!(state(&db, interrupted).await, "cancelled");
+    let before = store.files.lock().unwrap().clone();
+    let _: serde_json::Value =
+        sqlx::query_scalar("SELECT labyrinth.project_lifecycle($1,$2,$3,$3,false)")
+            .bind(actor)
+            .bind(tenant)
+            .bind(project)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+    let _ = labyrinth_worker::retention::once(&worker, &store)
+        .await
+        .unwrap();
+    assert_eq!(*store.files.lock().unwrap(), before);
+    let _: serde_json::Value =
+        sqlx::query_scalar("SELECT labyrinth.project_lifecycle($1,$2,$3,$3,true)")
+            .bind(actor)
+            .bind(tenant)
+            .bind(project)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+    assert_eq!(*store.files.lock().unwrap(), before);
+    let _: serde_json::Value =
+        sqlx::query_scalar("SELECT labyrinth.project_lifecycle($1,$2,$3,$3,false)")
+            .bind(actor)
+            .bind(tenant)
+            .bind(project)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+    sqlx::query("UPDATE labyrinth.projects SET deleted_at=clock_timestamp()-interval '8 days' WHERE tenant_id=$1 AND id=$2").bind(tenant).bind(project).execute(&db).await.unwrap();
+    assert!(
+        sqlx::query("SELECT labyrinth.project_lifecycle($1,$2,$3,$3,true)")
+            .bind(actor)
+            .bind(tenant)
+            .bind(project)
+            .execute(&db)
+            .await
+            .is_err()
+    );
+    store.fail.store(true, Ordering::SeqCst);
+    assert!(
+        labyrinth_worker::retention::once(&worker, &store)
+            .await
+            .is_err()
+    );
+    let purged: bool = sqlx::query_scalar(
+        "SELECT purged_at IS NOT NULL FROM labyrinth.projects WHERE tenant_id=$1 AND id=$2",
+    )
+    .bind(tenant)
+    .bind(project)
+    .fetch_one(&db)
+    .await
+    .unwrap();
+    assert!(!purged);
+    store.fail.store(false, Ordering::SeqCst);
+    sqlx::query("UPDATE labyrinth.attempts SET project_erase_due=clock_timestamp()-interval '1 second' WHERE tenant_id=$1 AND project_id=$2").bind(tenant).bind(project).execute(&db).await.unwrap();
+    for _ in 0..16 {
+        if !labyrinth_worker::retention::once(&worker, &store)
+            .await
+            .unwrap()
+        {
+            break;
+        }
+    }
+    let purged:bool=sqlx::query_scalar("SELECT purged_at IS NOT NULL AND name='[deleted]' FROM labyrinth.projects WHERE tenant_id=$1 AND id=$2").bind(tenant).bind(project).fetch_one(&db).await.unwrap();
+    assert!(purged);
+    let erased_project_name: String = sqlx::query_scalar(
+        "SELECT name FROM labyrinth.project_creations WHERE tenant_id=$1 AND project_id=$2",
+    )
+    .bind(tenant)
+    .bind(project)
+    .fetch_one(&db)
+    .await
+    .unwrap();
+    assert_eq!(erased_project_name, "[deleted]");
+    {
+        let files = store.files.lock().unwrap();
+        for key in &published {
+            assert!(!files.contains_key(key));
+        }
+        for (key, bytes) in &protected {
+            assert_eq!(&files[key], bytes);
+        }
+    }
+    // A late stale upload is removed by a repeat erasure sweep, without reopening access.
+    let late = published[0].clone();
+    store
+        .files
+        .lock()
+        .unwrap()
+        .insert(late.clone(), b"late".to_vec());
+    sqlx::query("UPDATE labyrinth.attempts SET project_erase_due=clock_timestamp()-interval '1 second' WHERE tenant_id=$1 AND project_id=$2").bind(tenant).bind(project).execute(&db).await.unwrap();
+    for _ in 0..16 {
+        if !labyrinth_worker::retention::once(&worker, &store)
+            .await
+            .unwrap()
+        {
+            break;
+        }
+    }
+    assert!(!store.files.lock().unwrap().contains_key(&late));
+    let erased_key:bool=sqlx::query_scalar("SELECT idempotency_key IS NULL AND idempotency_key_sha256 IS NOT NULL FROM labyrinth.project_creations WHERE tenant_id=$1 AND project_id=$2").bind(tenant).bind(project).fetch_one(&db).await.unwrap();
+    assert!(erased_key);
+    let replay = sqlx::query("SELECT labyrinth.create_project($1,$2,'hosted-project','hosted',50)")
+        .bind(actor)
+        .bind(tenant)
+        .execute(&db)
+        .await;
+    assert_eq!(
+        replay.unwrap_err().as_database_error().unwrap().message(),
+        "admission_not_found"
+    );
+    // Reconcile the latest independent ledger before a restored database can serve users.
+    // A latest ledger may also say that an owner already restored a retained design.
+    let _: serde_json::Value =
+        sqlx::query_scalar("SELECT labyrinth.project_lifecycle($1,$2,$3,$3,false)")
+            .bind(actor)
+            .bind(tenant)
+            .bind(preserved_project)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+    let _: serde_json::Value =
+        sqlx::query_scalar("SELECT labyrinth.project_lifecycle($1,$2,$3,$3,true)")
+            .bind(actor)
+            .bind(tenant)
+            .bind(preserved_project)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+    let ledger: serde_json::Value =
+        sqlx::query_scalar("SELECT labyrinth.export_project_lifecycle(NULL,NULL,100)")
+            .fetch_one(&db)
+            .await
+            .unwrap();
+    let entry = ledger
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|v| v["project_id"] == serde_json::json!(project))
+        .unwrap();
+    let epoch: i64 = entry["epoch"].as_str().unwrap().parse().unwrap();
+    for role in ["labyrinth_api", "labyrinth_worker", "labyrinth_maintenance"] {
+        let allowed:bool=sqlx::query_scalar("SELECT has_function_privilege($1,'labyrinth.export_project_lifecycle(uuid,uuid,integer)','EXECUTE')").bind(role).fetch_one(&db).await.unwrap();
+        assert!(!allowed);
+        let allowed:bool=sqlx::query_scalar("SELECT has_function_privilege($1,'labyrinth.reconcile_project_lifecycle(uuid,uuid,bigint,timestamptz,boolean)','EXECUTE')").bind(role).fetch_one(&db).await.unwrap();
+        assert!(!allowed);
+    }
+    sqlx::query("UPDATE labyrinth.projects SET deleted_at=NULL,purged_at=NULL,lifecycle_epoch=0 WHERE tenant_id=$1 AND id=$2").bind(tenant).bind(project).execute(&db).await.unwrap();
+    let maintenance = PgPoolOptions::new()
+        .after_connect(|c, _| {
+            Box::pin(async move {
+                sqlx::query("SET ROLE labyrinth_recovery")
+                    .execute(c)
+                    .await?;
+                Ok(())
+            })
+        })
+        .connect(url.as_str())
+        .await
+        .unwrap();
+    let apply = || {
+        sqlx::query_scalar::<_, bool>(
+            "SELECT labyrinth.reconcile_project_lifecycle($1,$2,$3,$4::text::timestamptz,true)",
+        )
+        .bind(tenant)
+        .bind(project)
+        .bind(epoch)
+        .bind(entry["deleted_at"].as_str().unwrap())
+    };
+    assert!(apply().fetch_one(&maintenance).await.unwrap());
+    assert!(!apply().fetch_one(&maintenance).await.unwrap());
+    let blocked:bool=sqlx::query_scalar("SELECT deleted_at IS NOT NULL AND lifecycle_epoch>$3 FROM labyrinth.projects WHERE tenant_id=$1 AND id=$2").bind(tenant).bind(project).bind(epoch).fetch_one(&db).await.unwrap();
+    assert!(blocked);
+    for _ in 0..16 {
+        if !labyrinth_worker::retention::once(&worker, &store)
+            .await
+            .unwrap()
+        {
+            break;
+        }
+    }
+    for (key, bytes) in &protected {
+        assert_eq!(&store.files.lock().unwrap()[key], bytes);
+    }
+    let active_entry = ledger
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|v| v["project_id"] == serde_json::json!(preserved_project))
+        .unwrap();
+    assert!(active_entry["deleted_at"].is_null());
+    let active_epoch: i64 = active_entry["epoch"].as_str().unwrap().parse().unwrap();
+    sqlx::query("UPDATE labyrinth.projects SET lifecycle_epoch=$3,deleted_at=clock_timestamp() WHERE tenant_id=$1 AND id=$2").bind(tenant).bind(preserved_project).bind(active_epoch-1).execute(&db).await.unwrap();
+    let restored: bool =
+        sqlx::query_scalar("SELECT labyrinth.reconcile_project_lifecycle($1,$2,$3,NULL,false)")
+            .bind(tenant)
+            .bind(preserved_project)
+            .bind(active_epoch)
+            .fetch_one(&maintenance)
+            .await
+            .unwrap();
+    assert!(restored);
+    let active:bool=sqlx::query_scalar("SELECT deleted_at IS NULL AND lifecycle_epoch>$3 FROM labyrinth.projects WHERE tenant_id=$1 AND id=$2").bind(tenant).bind(preserved_project).bind(active_epoch).fetch_one(&db).await.unwrap();
+    assert!(active);
+    for (key, bytes) in &protected {
+        assert_eq!(&store.files.lock().unwrap()[key], bytes);
+    }
+    maintenance.close().await;
     worker.close().await;
     db.close().await;
     sqlx::query(&format!("DROP DATABASE {name}"))
@@ -524,5 +897,32 @@ impl labyrinth_worker::cleanup::OrphanStore for MemoryStore {
             }
         }
         Ok(())
+    }
+}
+
+struct DeleteAfterFirstWrite<'a> {
+    store: &'a MemoryStore,
+    db: &'a PgPool,
+    actor: Uuid,
+    tenant: Uuid,
+    project: Uuid,
+    writes: std::sync::atomic::AtomicUsize,
+}
+impl ObjectStore for DeleteAfterFirstWrite<'_> {
+    async fn put(&self, key: &str, bytes: &[u8]) -> Result<()> {
+        self.store.put(key, bytes).await?;
+        if self.writes.fetch_add(1, Ordering::SeqCst) == 0 {
+            let _: serde_json::Value =
+                sqlx::query_scalar("SELECT labyrinth.project_lifecycle($1,$2,$3,$3,false)")
+                    .bind(self.actor)
+                    .bind(self.tenant)
+                    .bind(self.project)
+                    .fetch_one(self.db)
+                    .await?;
+        }
+        Ok(())
+    }
+    async fn get(&self, key: &str, limit: usize) -> Result<Vec<u8>> {
+        self.store.get(key, limit).await
     }
 }

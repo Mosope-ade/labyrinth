@@ -79,3 +79,12 @@ attempt list. This additive rollout introduces no published-artifact cleanup and
 new retention/deletion policy: evidence currently follows attempt history retention.
 
 Acceptance evidence and commands: [engine evidence tests](../testing/engine-evidence.md).
+
+## Retention extension — 2026-11-16
+
+Migration 0016 adds the approved policy-bound erasure exception: evidence from
+unsuccessful jobs expires after 30 days, and explicit project deletion erases content
+after its seven-day recovery window. The evidence endpoint returns null after
+erasure; fixed diagnostic categories and minimal fencing metadata remain. See
+[retention V1](retention-v1.md). Fresh evidence is still immutable and cannot be
+replaced by a stale finalizer. No arbitrary exception strings enter public responses.

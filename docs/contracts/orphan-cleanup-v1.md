@@ -4,7 +4,7 @@ The agreed initial safety window is **24 hours after an attempt becomes terminal
 Set `LABYRINTH_ORPHAN_SAFETY_SECS=86400` explicitly on the worker. Missing, malformed
 or shorter settings prevent startup. Longer conservative windows up to 30 days are
 supported. This policy concerns unpublished staging objects only; published revision
-retention, project deletion and backup retention remain separate decisions.
+retention, project deletion and backups follow the separate [retention policy](retention-v1.md).
 
 Eligible attempts have an immutable unsuccessful terminal classification, an ended_at
 older than the window, a due cleanup time, no live cleanup claim, and **no artifact

@@ -26,6 +26,13 @@ pub(super) fn extend(document: &mut Value) {
     let count = json!({"type":"integer","minimum":0});
     let date = json!({"type":"string","format":"date-time"});
     let hash = json!({"type":"string","pattern":"^[0-9a-f]{64}$"});
+    s["ProjectConfirmation"] = record(json!({"confirm_project":uuid}));
+    s["ProjectLifecycle"] = record(
+        json!({"project_id":uuid,"state":{"type":"string","enum":["active","deleted","purged"]},"deleted_at":nullable(date.clone()),"purge_after":nullable(date.clone())}),
+    );
+    s["DeletedProject"] =
+        record(json!({"project_id":uuid,"name":text,"deleted_at":date,"purge_after":date}));
+    s["DeletedProjectPage"] = page("DeletedProject", uuid.clone());
     s["GenerationError"] = imported(
         serde_json::to_value(schemars::schema_for!(
             labyrinth_engine::artifacts::GenerationError

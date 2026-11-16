@@ -80,3 +80,14 @@ preserves resource exhaustion (including cooperative search/verification budgets
 across process boundaries; exit 2 remains generic rejection. No raw exception text
 is persisted. See [diagnostic contract](job-diagnostics-v1.md). Earlier worker
 finalization functions remain for rolling compatibility and legacy attempts.
+
+## Retention extension — 2026-11-16
+
+Workers now use finish_attempt_evidence for bounded private engine reports and run
+policy-bound retention alongside orphan cleanup. Migration 0016 wraps claim/context/
+heartbeat/publication with project lifecycle epochs. Ownership is rechecked before
+each artifact write. Explicit owner deletion can erase that project's published
+content after seven days; orphan cleanup still cannot. Unsuccessful payload/evidence
+retention is 30 days. See [retention V1](retention-v1.md) and
+[acceptance](../testing/retention.md). These rules supersede earlier deferred-policy
+notes; backup configuration and live restore acceptance remain separate.

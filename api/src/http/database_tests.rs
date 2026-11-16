@@ -1919,3 +1919,188 @@ async fn engine_evidence_is_fenced_immutable_bounded_and_project_private() {
     );
     worker.close().await;
 }
+
+#[tokio::test]
+async fn project_deletion_blocks_access_and_restore_preserves_epoch_fences() {
+    let f = Fixture::new(2).await;
+    let (_, admitted) = f
+        .send("POST", &f.path(), f.body(), "before-delete", f.actor)
+        .await;
+    let job: Uuid = serde_json::from_value(admitted["job_id"].clone()).unwrap();
+    let attempt = Uuid::new_v4();
+    let fence = Uuid::new_v4();
+    sqlx::query("UPDATE labyrinth.jobs SET state='running' WHERE tenant_id=$1 AND id=$2")
+        .bind(f.tenant)
+        .bind(job)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO labyrinth.attempts(tenant_id,project_id,job_id,id,attempt_number,fence,worker_id,lease_expires_at,heartbeat_at,staged_prefix) VALUES($1,$2,$3,$4,1,$5,'lifecycle-test',clock_timestamp()+interval '60 seconds',clock_timestamp(),$6)").bind(f.tenant).bind(f.project).bind(job).bind(attempt).bind(fence).bind(format!("attempts/{}/{job}/{attempt}/",f.tenant)).execute(&f.admin).await.unwrap();
+    // Hold the job row: bounded cancellation must skip it rather than blocking deletion.
+    let mut held = f.admin.begin().await.unwrap();
+    sqlx::query("SELECT id FROM labyrinth.jobs WHERE tenant_id=$1 AND id=$2 FOR UPDATE")
+        .bind(f.tenant)
+        .bind(job)
+        .execute(&mut *held)
+        .await
+        .unwrap();
+    let project = format!("/v1/tenants/{}/projects/{}", f.tenant, f.project);
+    let request = json!({"confirm_project":f.project});
+    assert_eq!(
+        f.send(
+            "POST",
+            &format!("{project}/delete"),
+            json!({"confirm_project":Uuid::new_v4()}),
+            "",
+            f.actor
+        )
+        .await
+        .0,
+        StatusCode::BAD_REQUEST
+    );
+    sqlx::query("UPDATE labyrinth.memberships SET role='editor' WHERE tenant_id=$1 AND user_id=$2")
+        .bind(f.tenant)
+        .bind(f.actor)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    assert_eq!(
+        f.send(
+            "POST",
+            &format!("{project}/delete"),
+            request.clone(),
+            "",
+            f.actor
+        )
+        .await
+        .0,
+        StatusCode::FORBIDDEN
+    );
+    sqlx::query("UPDATE labyrinth.memberships SET role='owner' WHERE tenant_id=$1 AND user_id=$2")
+        .bind(f.tenant)
+        .bind(f.actor)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    let (status, deleted) = f
+        .send(
+            "POST",
+            &format!("{project}/delete"),
+            request.clone(),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(deleted["state"], "deleted");
+    assert_eq!(
+        f.send("GET", &project, json!({}), "", f.actor).await.0,
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        f.send(
+            "GET",
+            &format!("{}/{job}", f.path()),
+            json!({}),
+            "",
+            f.actor
+        )
+        .await
+        .0,
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        f.send("POST", &f.path(), f.body(), "after-delete", f.actor)
+            .await
+            .0,
+        StatusCode::NOT_FOUND
+    );
+    let (_, replay) = f
+        .send(
+            "POST",
+            &format!("{project}/delete"),
+            request.clone(),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(replay, deleted);
+    let (_, page) = f
+        .send(
+            "GET",
+            &format!("/v1/tenants/{}/projects/deleted", f.tenant),
+            json!({}),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(page["items"][0]["project_id"], json!(f.project));
+    let (_, restored) = f
+        .send(
+            "POST",
+            &format!("{project}/restore"),
+            request.clone(),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(restored["state"], "active");
+    assert_eq!(
+        f.send("GET", &project, json!({}), "", f.actor).await.0,
+        StatusCode::OK
+    );
+    held.commit().await.unwrap();
+    let live:bool=sqlx::query_scalar("SELECT exit_classification IS NULL AND lease_expires_at>clock_timestamp() FROM labyrinth.attempts WHERE fence=$1").bind(fence).fetch_one(&f.admin).await.unwrap();
+    assert!(live);
+    let heartbeat: bool = sqlx::query_scalar("SELECT labyrinth.heartbeat_attempt($1,$2,$3,60)")
+        .bind(f.tenant)
+        .bind(job)
+        .bind(fence)
+        .fetch_one(&f.admin)
+        .await
+        .unwrap();
+    assert!(!heartbeat);
+    let context: Option<Value> = sqlx::query_scalar("SELECT labyrinth.attempt_context($1,$2,$3)")
+        .bind(f.tenant)
+        .bind(job)
+        .bind(fence)
+        .fetch_one(&f.admin)
+        .await
+        .unwrap();
+    assert!(context.is_none());
+    let publish: bool =
+        sqlx::query_scalar("SELECT labyrinth.publish_attempt($1,$2,$3,$4,$5,'[]'::jsonb)")
+            .bind(f.tenant)
+            .bind(job)
+            .bind(fence)
+            .bind(Uuid::new_v4())
+            .bind("a".repeat(64))
+            .fetch_one(&f.admin)
+            .await
+            .unwrap();
+    assert!(!publish);
+    let retired: i32 = sqlx::query_scalar("SELECT labyrinth.retire_project_jobs($1,$2,100)")
+        .bind(f.tenant)
+        .bind(f.project)
+        .fetch_one(&f.admin)
+        .await
+        .unwrap();
+    assert_eq!(retired, 1);
+    let (_, retired) = f
+        .send(
+            "GET",
+            &format!("{}/{job}", f.path()),
+            json!({}),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(retired["state"], "cancelled");
+    let (status, next) = f
+        .send("POST", &f.path(), f.body(), "restored-new-work", f.actor)
+        .await;
+    assert_eq!(status, StatusCode::ACCEPTED);
+    let next_id: Uuid = serde_json::from_value(next["job_id"].clone()).unwrap();
+    let current:bool=sqlx::query_scalar("SELECT j.project_epoch=p.lifecycle_epoch AND j.project_epoch>0 FROM labyrinth.jobs j JOIN labyrinth.projects p ON (p.tenant_id,p.id)=(j.tenant_id,j.project_id) WHERE j.tenant_id=$1 AND j.id=$2").bind(f.tenant).bind(next_id).fetch_one(&f.admin).await.unwrap();
+    assert!(current);
+}

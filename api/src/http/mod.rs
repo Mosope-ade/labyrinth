@@ -3,6 +3,7 @@ mod admin;
 mod diagnostics;
 mod discovery;
 mod error;
+mod lifecycle;
 mod onboarding;
 mod projects;
 pub use onboarding::OnboardingPolicy;
@@ -98,6 +99,18 @@ pub fn router_with_onboarding(
         timeout: limits.request_timeout,
     };
     let protected = Router::new()
+        .route(
+            "/v1/tenants/{tenant}/projects/{project}/delete",
+            post(lifecycle::delete),
+        )
+        .route(
+            "/v1/tenants/{tenant}/projects/{project}/restore",
+            post(lifecycle::restore),
+        )
+        .route(
+            "/v1/tenants/{tenant}/projects/deleted",
+            get(lifecycle::deleted),
+        )
         .route(
             "/v1/tenants/{tenant}/projects/{project}/jobs/{job}/attempts/{attempt}/evidence",
             get(diagnostics::evidence),

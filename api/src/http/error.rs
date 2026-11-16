@@ -111,6 +111,11 @@ impl From<AdmissionError> for ApiError {
                 "idempotency_conflict",
                 "Idempotency key was already used for different input",
             ),
+            AdmissionError::RecoveryExpired => Self::new(
+                S::CONFLICT,
+                "recovery_expired",
+                "Project recovery window has expired",
+            ),
             AdmissionError::StaleHead => Self::new(
                 S::CONFLICT,
                 "stale_head",

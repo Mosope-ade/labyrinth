@@ -20,6 +20,8 @@ pub enum AdmissionError {
     IdempotencyConflict,
     #[error("project head changed")]
     StaleHead,
+    #[error("project recovery window expired")]
+    RecoveryExpired,
     #[error("catalog unavailable for new admission")]
     CatalogUnavailable,
     #[error("invalid base revision or catalog mismatch")]
@@ -40,6 +42,7 @@ impl From<sqlx::Error> for AdmissionError {
                 "admission_forbidden" => Self::Forbidden,
                 "admission_not_found" => Self::NotFound,
                 "admission_idempotency_conflict" => Self::IdempotencyConflict,
+                "admission_recovery_expired" => Self::RecoveryExpired,
                 "admission_stale_head" => Self::StaleHead,
                 "admission_catalog_unavailable" => Self::CatalogUnavailable,
                 "admission_invalid_base" => Self::InvalidBase,

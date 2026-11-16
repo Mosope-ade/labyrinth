@@ -149,7 +149,8 @@ async fn cancellation_drops_and_kills_child() {
     let pidfile =
         std::env::temp_dir().join(format!("labyrinth-child-pid-{}", uuid::Uuid::new_v4()));
     let body = format!(
-        "#!/bin/sh\necho $$ > '{}'\nexec /bin/sleep 30\n",
+        "#!/bin/sh\n: > '{}'\n/bin/sleep 0.05\necho $$ > '{}'\nexec /bin/sleep 30\n",
+        pidfile.display(),
         pidfile.display()
     );
     let path = script(&body).await;
@@ -165,8 +166,12 @@ async fn cancellation_drops_and_kills_child() {
     });
     let mut pid = None;
     for _ in 0..100 {
-        if let Ok(value) = std::fs::read_to_string(&pidfile) {
-            pid = Some(value.trim().to_owned());
+        // Opening/truncating the file precedes the shell's PID write.
+        if let Ok(value) = std::fs::read_to_string(&pidfile)
+            && let Ok(value) = value.trim().parse::<u32>()
+            && value > 0
+        {
+            pid = Some(value);
             break;
         }
         tokio::time::sleep(Duration::from_millis(10)).await;
@@ -182,7 +187,7 @@ async fn cancellation_drops_and_kills_child() {
     }
     assert!(
         !Path::new(&format!("/proc/{pid}")).exists(),
-        "cancelled child must be killed and reaped"
+        "cancelled child must be killed and reaped; observed PID={pid:?}"
     );
     std::fs::remove_file(pidfile).unwrap();
     std::fs::remove_file(path).unwrap();
