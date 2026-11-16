@@ -1685,3 +1685,40 @@ async fn admin_job_intervention_cancels_without_exposing_inputs_or_rewriting_suc
             .unwrap();
     assert_eq!(count, 1);
 }
+
+#[tokio::test]
+async fn readiness_checks_database_and_signing_keys_without_exposing_details() {
+    let f = Fixture::new(2).await;
+    let request = || {
+        Request::builder()
+            .uri("/health/ready")
+            .body(Body::empty())
+            .unwrap()
+    };
+    assert_eq!(
+        f.app().oneshot(request()).await.unwrap().status(),
+        StatusCode::NO_CONTENT
+    );
+    f.auth.expire_for_test().await;
+    let replacement = Signer::new("readiness-rotation");
+    f.source.replace_keys(vec![replacement.jwk]);
+    assert_eq!(
+        f.app().oneshot(request()).await.unwrap().status(),
+        StatusCode::NO_CONTENT
+    );
+    f.auth.expire_for_test().await;
+    f.source.fail();
+    let response = f.app().oneshot(request()).await.unwrap();
+    assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+    assert!(
+        to_bytes(response.into_body(), 1024)
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    f.pool.close().await;
+    assert_eq!(
+        f.app().oneshot(request()).await.unwrap().status(),
+        StatusCode::SERVICE_UNAVAILABLE
+    );
+}

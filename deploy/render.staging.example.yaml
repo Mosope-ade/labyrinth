@@ -1,0 +1,90 @@
+# Staging proposal only. Review region/budget before provisioning.
+# Secrets are operator-supplied; automatic deployment is disabled.
+services:
+- type: web
+  name: labyrinth-staging-api
+  runtime: docker
+  region: frankfurt
+  plan: 0.5c-512mb
+  numInstances: 1
+  autoDeployTrigger: 'off'
+  dockerfilePath: ./deploy/Dockerfile
+  dockerContext: .
+  dockerCommand: /app/labyrinth-api
+  maxShutdownDelaySeconds: 30
+  envVars:
+  - key: LABYRINTH_BIND
+    value: 0.0.0.0:10000
+  - key: LABYRINTH_AUTH_ISSUER
+    sync: false
+  - key: LABYRINTH_DATABASE_URL
+    sync: false
+  - key: LABYRINTH_DB_MAX_CONNECTIONS
+    value: '4'
+  - key: LABYRINTH_DB_ACQUIRE_TIMEOUT_MS
+    value: '1000'
+  - key: LABYRINTH_DB_STATEMENT_TIMEOUT_MS
+    value: '5000'
+  - key: LABYRINTH_DB_LOCK_TIMEOUT_MS
+    value: '1000'
+  - key: LABYRINTH_HTTP_MAX_IN_FLIGHT
+    value: '4'
+  - key: LABYRINTH_HTTP_TIMEOUT_MS
+    value: '10000'
+  - key: LABYRINTH_TENANT_MAX_PROJECTS
+    value: '50'
+  - key: LABYRINTH_ONBOARDING_MAX_ACTIVE_JOBS
+    value: '2'
+  - key: LABYRINTH_ARTIFACT_STORAGE_ORIGIN
+    sync: false
+  - key: LABYRINTH_ARTIFACT_STORAGE_BUCKET
+    value: engineering-packages
+  - key: LABYRINTH_ARTIFACT_STORAGE_TOKEN
+    sync: false
+  healthCheckPath: /health/ready
+- type: worker
+  name: labyrinth-staging-worker
+  runtime: docker
+  region: frankfurt
+  plan: 1c-2g
+  numInstances: 1
+  autoDeployTrigger: 'off'
+  dockerfilePath: ./deploy/Dockerfile
+  dockerContext: .
+  dockerCommand: /app/labyrinth-worker
+  maxShutdownDelaySeconds: 30
+  envVars:
+  - key: LABYRINTH_DATABASE_URL
+    sync: false
+  - key: LABYRINTH_STORAGE_ORIGIN
+    sync: false
+  - key: LABYRINTH_STORAGE_BUCKET
+    value: engineering-packages
+  - key: LABYRINTH_STORAGE_TOKEN
+    sync: false
+  - key: LABYRINTH_WORKER_ID
+    value: staging-worker-1
+  - key: LABYRINTH_PRLIMIT_PATH
+    value: /usr/bin/prlimit
+  - key: LABYRINTH_WORKER_LEASE_SECS
+    value: '60'
+  - key: LABYRINTH_WORKER_HEARTBEAT_SECS
+    value: '15'
+  - key: LABYRINTH_WORKER_DEADLINE_SECS
+    value: '120'
+  - key: LABYRINTH_WORKER_CPU_SECS
+    value: '60'
+  - key: LABYRINTH_WORKER_MEMORY_BYTES
+    value: '1073741824'
+  - key: LABYRINTH_WORKER_INPUT_BYTES
+    value: '2097152'
+  - key: LABYRINTH_WORKER_OUTPUT_BYTES
+    value: '33554432'
+  - key: LABYRINTH_WORKER_ATTEMPTS
+    value: '3'
+  - key: LABYRINTH_WORKER_RETRY_FIRST_SECS
+    value: '10'
+  - key: LABYRINTH_WORKER_RETRY_SECOND_SECS
+    value: '60'
+  - key: LABYRINTH_ORPHAN_SAFETY_SECS
+    value: '86400'

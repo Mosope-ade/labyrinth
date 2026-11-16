@@ -94,6 +94,26 @@ impl JwksVerifier {
             refresh: Mutex::new(()),
         })
     }
+    /// Bounded readiness refresh sharing verification's cache/coalescing policy.
+    pub async fn ready(&self) -> Result<(), AuthError> {
+        let kid = self
+            .cache
+            .read()
+            .await
+            .keys
+            .keys()
+            .next()
+            .cloned()
+            .ok_or(AuthError::Unavailable)?;
+        // A rotation may remove the old key while successfully refreshing the set.
+        let _ = self.key(&kid).await;
+        let cache = self.cache.read().await;
+        if Instant::now() < cache.valid_until && !cache.keys.is_empty() {
+            Ok(())
+        } else {
+            Err(AuthError::Unavailable)
+        }
+    }
     pub async fn verify(&self, token: &str) -> Result<AuthenticatedActor, AuthError> {
         if token.len() > 16384 || token.is_empty() {
             return Err(AuthError::InvalidToken);

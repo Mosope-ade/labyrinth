@@ -1,0 +1,22 @@
+# Whitelist build inputs: never transmit local artifacts, git history or secrets.
+**
+!Cargo.toml
+!Cargo.lock
+!engine/
+!engine/**
+!api/
+!api/**
+!worker/
+!worker/**
+!cli/
+!cli/**
+!tests/
+!tests/fixtures/
+!tests/fixtures/**
+!deploy/
+!deploy/Dockerfile
+**/.env*
+**/*.pem
+**/*.key
+**/target/
+**/.local/

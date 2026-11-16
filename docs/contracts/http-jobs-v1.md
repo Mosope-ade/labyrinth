@@ -164,3 +164,8 @@ An inconclusive diagnostic is distinct from the job lifecycle's failed state.
 
 [Client workflow discovery](client-workflow-v1.md) adds admitted-catalog browsing,
 shared structured-intent validation/clarification and bounded job listing.
+
+Deployment readiness: unauthenticated GET /health/ready returns 204 only while the
+restricted API database role, required schema functions and trusted signing keys are
+usable; otherwise 503 with no operational body. It shares bounded capacity/deadlines
+and cache-coalesced key refresh. GET /health/live remains process-only liveness.

@@ -1,0 +1,25 @@
+name: Backend container
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Validate reviewed provider configuration
+        run: |
+          python3 -m venv /tmp/labyrinth-validation
+          /tmp/labyrinth-validation/bin/python -m pip install --only-binary=:all: --index-url https://pypi.org/simple --require-hashes -r deploy/validation/requirements.lock
+          /tmp/labyrinth-validation/bin/python scripts/validate-render-blueprint.py deploy/render.staging.example.yaml
+      - name: Build pinned non-root runtime
+        run: docker build --target runtime -f deploy/Dockerfile -t labyrinth-backend:test .
+      - name: Export public synthetic smoke fixture
+        run: docker build --target fixture --output type=local,dest=/tmp/labyrinth-fixture -f deploy/Dockerfile .
+      - name: Test bounded offline generation and fail-closed API startup
+        run: bash scripts/smoke-container.sh labyrinth-backend:test /tmp/labyrinth-fixture/container-fixture.json

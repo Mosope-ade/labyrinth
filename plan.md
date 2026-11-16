@@ -777,3 +777,19 @@ See [ADR 0008](docs/decisions/0008-admin-catalog-and-audit-governance.md),
 and [acceptance](docs/testing/admin-operations.md). AI-specific telemetry, full
 counterexample transport, actual hosted provisioning and deployment/restore/load
 acceptance remain unfinished. No admin GUI has been built.
+
+## Deployment preparation checkpoint — 2026-11-16
+
+- [x] Pinned non-root backend container definition, separate API/worker commands and
+  explicit operator tools; no auto-migration or owner credentials in runtime services.
+- [x] Offline real-engine/container smoke workflow, strict provider schema validation
+  with independently hash-locked tooling and credential-safe build-context exclusions.
+- [x] Bounded readiness distinct from liveness, including role/schema and refreshable
+  signing-key dependencies; provider errors remain redacted.
+- [x] Reviewable staging proposal and role-separated provisioning/rollback runbook.
+
+See [deployment preparation](deploy/README.md),
+[runbook](docs/runbooks/staging-deployment.md) and
+[acceptance](docs/testing/deployment-preparation.md). Actual container CI, region/budget
+approval, provider credentials/provisioning and live load/restore/Auth/Storage checks
+must be confirmed separately. Local native smoke is not a container deployment claim.

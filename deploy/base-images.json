@@ -1,0 +1,13 @@
+{
+  "verified_date": "2026-11-16",
+  "rust": {
+    "image": "rust:1.95.0-bookworm",
+    "digest": "sha256:6258907abe69656e41cd992e0b705cdcfabcbbe3db374f92ed2d47121282d4a1",
+    "source": "https://hub.docker.com/v2/repositories/library/rust/tags/1.95.0-bookworm"
+  },
+  "runtime": {
+    "image": "debian:bookworm-slim",
+    "digest": "sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc",
+    "source": "https://hub.docker.com/v2/repositories/library/debian/tags/bookworm-slim"
+  }
+}

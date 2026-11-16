@@ -1,0 +1,23 @@
+# Deployment preparation acceptance
+
+The backend container workflow builds pinned official base images, checks non-root
+configuration, runs real offline engine generation with no network/hosted credential,
+checks package integrity and enforces fail-closed API startup. The provider proposal
+is validated against a hash-pinned Render schema using locked wheel-only tooling.
+
+Native local evidence: real public fixture generation under prlimit with a cleared
+environment; 13-artifact inventory/input/manifest/five-pass checks; deliberate payload
+corruption rejects; shell syntax and strict blueprint validation; duplicate/credential
+configuration rejects without echoing values. Readiness tests cover healthy DB/role/
+schema, signing-key rotation and expired-key provider outage plus closed database.
+
+This workspace has no Docker daemon and disallows rootless Podman namespaces. A
+rootless diagnostic escalation timed out in automatic review. Therefore local native
+checks do not constitute a local container-image build. Remote container CI results
+must be recorded separately. No hosted deployment, paid resources or live Auth/Storage
+acceptance is claimed until the staging runbook is actually completed.
+
+Local checkpoint: **191 passed, 0 failed, 0 ignored** in the locked workspace/all-features
+suite. Formatting/Clippy, native bounded generation and corruption rejection, shell
+syntax, provider schema validation and credential-safe rejection checks passed.
+Remote container build evidence is intentionally separate from this local checkpoint.

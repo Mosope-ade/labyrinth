@@ -728,3 +728,9 @@ state changes are audited without raw YAML/intent data. AI cost telemetry remain
 unavailable until AI integration. See [admin V1](docs/contracts/admin-v1.md) and
 [ADR 0008](docs/decisions/0008-admin-catalog-and-audit-governance.md). Hosted provisioning,
 restore/load drills and the later admin GUI remain separate acceptance work.
+
+Deployment preparation now includes pinned non-root containers, role-separated runtime
+commands, explicit operator tooling and a readiness probe distinct from liveness.
+The staging proposal is a review artifact; it creates no resources and disables
+automatic deployment. Region/budget approval, actual container CI and live provider,
+load and restore evidence remain required. See [deployment preparation](deploy/README.md).

@@ -6,6 +6,7 @@ mod error;
 mod onboarding;
 mod projects;
 pub use onboarding::OnboardingPolicy;
+mod readiness;
 mod routes;
 mod workflow;
 use crate::auth::{AuthError, JwksVerifier};
@@ -182,9 +183,11 @@ pub fn router_with_onboarding(
         })
         .layer(DefaultBodyLimit::max(MAX_BODY))
         .layer(middleware::from_fn_with_state(state.clone(), guard))
-        .with_state(state);
+        .with_state(state.clone());
     Ok(Router::new()
         .route("/health/live", get(|| async { StatusCode::NO_CONTENT }))
+        .route("/health/ready", get(readiness::ready))
+        .with_state(state)
         .merge(protected))
 }
 fn single_header<'a>(headers: &'a HeaderMap, name: &str) -> Result<&'a str, ApiError> {
