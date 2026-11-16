@@ -6,3 +6,5 @@ pub static MIGRATIONS: sqlx::migrate::Migrator = sqlx::migrate!("./migrations");
 pub mod auth;
 pub mod http;
 pub mod runtime;
+
+pub mod artifacts;

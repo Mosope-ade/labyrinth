@@ -22,6 +22,7 @@ struct AppState {
     auth: Arc<JwksVerifier>,
     capacity: Arc<Semaphore>,
     timeout: Duration,
+    artifacts: Option<Arc<crate::artifacts::ArtifactReader>>,
 }
 type WorkPermit = Arc<OwnedSemaphorePermit>;
 #[derive(Clone, Copy)]
@@ -35,6 +36,14 @@ pub fn router(
     auth: Arc<JwksVerifier>,
     limits: HttpLimits,
 ) -> Result<Router, &'static str> {
+    router_with_artifacts(pool, auth, limits, None)
+}
+pub fn router_with_artifacts(
+    pool: PgPool,
+    auth: Arc<JwksVerifier>,
+    limits: HttpLimits,
+    artifacts: Option<Arc<crate::artifacts::ArtifactReader>>,
+) -> Result<Router, &'static str> {
     if !(1..=256).contains(&limits.max_in_flight)
         || limits.request_timeout < Duration::from_secs(1)
         || limits.request_timeout > Duration::from_secs(30)
@@ -44,6 +53,7 @@ pub fn router(
     let state = AppState {
         pool,
         auth,
+        artifacts,
         capacity: Arc::new(Semaphore::new(limits.max_in_flight)),
         timeout: limits.request_timeout,
     };
@@ -55,6 +65,14 @@ pub fn router(
         .route(
             "/v1/tenants/{tenant}/projects/{project}/jobs/{job}",
             get(routes::status),
+        )
+        .route(
+            "/v1/tenants/{tenant}/projects/{project}/jobs/{job}/cancel",
+            post(routes::cancel),
+        )
+        .route(
+            "/v1/tenants/{tenant}/projects/{project}/revisions/{revision}/artifacts/{name}",
+            get(routes::download),
         )
         .fallback(|| async {
             ApiError::new(StatusCode::NOT_FOUND, "not_found", "Route was not found")

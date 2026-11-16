@@ -144,3 +144,108 @@ pub(super) async fn status(
     let Path((tenant, project, job)) = path.map_err(|_| ApiError::invalid())?;
     Ok(Json(jobs::status(&state.pool, actor.id(), tenant, project, job).await?).into_response())
 }
+
+pub(super) async fn cancel(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthenticatedActor>,
+    path: Result<Path<(Uuid, Uuid, Uuid)>, PathRejection>,
+) -> Result<Response, ApiError> {
+    let Path((tenant, project, job)) = path.map_err(|_| ApiError::invalid())?;
+    let status: crate::jobs::JobState =
+        sqlx::query_scalar("SELECT labyrinth.cancel_job($1,$2,$3,$4)")
+            .bind(actor.id())
+            .bind(tenant)
+            .bind(project)
+            .bind(job)
+            .fetch_one(&state.pool)
+            .await
+            .map_err(crate::jobs::AdmissionError::from)?;
+    Ok(Json(serde_json::json!({"job_id":job,"state":status})).into_response())
+}
+
+pub(super) async fn download(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthenticatedActor>,
+    Extension(permit): Extension<WorkPermit>,
+    path: Result<Path<(Uuid, Uuid, Uuid, String)>, PathRejection>,
+) -> Result<Response, ApiError> {
+    use sha2::{Digest, Sha256};
+    use sqlx::Row;
+    let Path((tenant, project, revision, name)) = path.map_err(|_| ApiError::invalid())?;
+    let lookup = || {
+        sqlx::query("SELECT * FROM labyrinth.download_artifact($1,$2,$3,$4,$5)")
+            .bind(actor.id())
+            .bind(tenant)
+            .bind(project)
+            .bind(revision)
+            .bind(&name)
+    };
+    let row = lookup()
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(crate::jobs::AdmissionError::from)?
+        .ok_or_else(|| {
+            ApiError::new(StatusCode::NOT_FOUND, "not_found", "Artifact was not found")
+        })?;
+    let unavailable = || {
+        ApiError::new(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "artifact_unavailable",
+            "Artifact is temporarily unavailable",
+        )
+    };
+    let reader = state.artifacts.as_ref().ok_or_else(unavailable)?;
+    let key: String = row.get("object_key");
+    let hash: String = row.get("sha256");
+    let size: i64 = row.get("size_bytes");
+    let bytes = reader
+        .read(&key, size as u64)
+        .await
+        .map_err(|_| unavailable())?;
+    if format!("{:x}", Sha256::digest(&bytes)) != hash {
+        return Err(unavailable());
+    }
+    // Recheck current access after network I/O, before releasing sensitive bytes.
+    lookup()
+        .fetch_optional(&state.pool)
+        .await
+        .map_err(crate::jobs::AdmissionError::from)?
+        .ok_or_else(|| {
+            ApiError::new(StatusCode::NOT_FOUND, "not_found", "Artifact was not found")
+        })?;
+    Ok((
+        [
+            (header::CONTENT_TYPE, "application/json".to_owned()),
+            (
+                header::CONTENT_DISPOSITION,
+                format!("attachment; filename=\"{name}\""),
+            ),
+            (header::ETAG, format!("\"{hash}\"")),
+        ],
+        axum::body::Body::from_stream(DownloadBody {
+            bytes: bytes.into(),
+            _permit: permit,
+        }),
+    )
+        .into_response())
+}
+
+// Retain request capacity through body consumption, including slow clients.
+struct DownloadBody {
+    bytes: axum::body::Bytes,
+    _permit: WorkPermit,
+}
+impl tokio_stream::Stream for DownloadBody {
+    type Item = Result<axum::body::Bytes, std::convert::Infallible>;
+    fn poll_next(
+        mut self: std::pin::Pin<&mut Self>,
+        _: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        if self.bytes.is_empty() {
+            std::task::Poll::Ready(None)
+        } else {
+            let size = self.bytes.len().min(64 * 1024);
+            std::task::Poll::Ready(Some(Ok(self.bytes.split_to(size))))
+        }
+    }
+}

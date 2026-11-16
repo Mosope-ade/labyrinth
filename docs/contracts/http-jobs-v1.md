@@ -110,3 +110,38 @@ liveness, not database/JWKS readiness or proof of worker availability. Render's 
 must enforce HTTPS. Run `cargo run -p labyrinth-api --locked` after configuring
 [the API environment](../../api/.env.example) and applying migrations as their owner.
 The binary never migrates or provisions data using runtime credentials.
+
+## Cancellation and artifact downloads — 2026-11-16
+
+`POST /v1/tenants/{tenant}/projects/{project}/jobs/{job}/cancel` requires current
+owner/editor membership and a valid bearer token. No request payload or idempotency
+key is needed. Returns `200 {"job_id":"...","state":"..."}`. Queued/retry-wait jobs
+become cancelled immediately; running jobs become cancel_requested and cannot
+publish. Workers stop at heartbeat/lease detection and queue recovery completes
+cancellation. Repeating cancellation preserves terminal state, including succeeded
+history. Cancellation and publication serialize on the job; whichever commits first
+wins. Queue acknowledgment is left to redelivery to avoid lock inversion.
+
+`GET /v1/tenants/{tenant}/projects/{project}/revisions/{revision}/artifacts/{name}`
+requires current tenant membership (including viewers). Only published, succeeded
+revision metadata authorizes downloads. Unknown revision/file yields 404 after
+project authorization; forbidden tenant access yields 403. Supported artifact names
+are the fixed core package inventory, including manifest.json. Each response is one
+JSON attachment; assembling a package directory/ZIP is client work for now.
+
+The API fetches the private object server-side, bounds it to its authoritative size
+(maximum 32 MiB), checks SHA-256, and rechecks current authorization before returning
+bytes. No object key, credential or signed URL is returned. Response headers include
+Content-Type application/json, attachment filename, SHA-256 ETag, no-store and
+nosniff. Partial/corrupt/unavailable storage returns a redacted 503
+artifact_unavailable. Request capacity remains held while the response body is
+consumed or dropped, protecting against slow-client memory amplification.
+
+Configure the optional complete group LABYRINTH_ARTIFACT_STORAGE_ORIGIN,
+LABYRINTH_ARTIFACT_STORAGE_BUCKET and LABYRINTH_ARTIFACT_STORAGE_TOKEN to enable
+transport. The origin must be HTTPS with no credentials/path/query/fragment;
+redirects are forbidden. Partial configuration fails startup. An absent group allows
+admission/status service to run, with authorized downloads returning 503. Provision
+a private bucket and a server-only read credential separately; never use a public
+bucket or expose worker credentials to clients. End-to-end HTTP tests use a test-only
+loopback storage fixture, not a production plaintext configuration switch.

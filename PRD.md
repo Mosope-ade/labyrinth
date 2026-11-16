@@ -667,3 +667,10 @@ engine/DB/queue execution with injected storage failures plus HTTP storage adapt
 tests. They do not claim live Supabase/Render deployment acceptance. Artifact
 download authorization, cancellation routes, richer diagnostics, orphan cleanup,
 retention and restore acceptance remain required before the hosted milestone closes.
+
+Cancellation and published-artifact downloads now have authenticated HTTP contracts;
+see [HTTP V1](docs/contracts/http-jobs-v1.md). Current membership is required at
+download authorization and rechecked after private storage fetch. Downloads expose
+verified bytes without storage keys or bearer URLs. Running cancellation blocks
+publication; terminal history remains immutable. Orphan staging cleanup still needs
+its safety-window decision and implementation; published retention is unchanged.

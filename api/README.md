@@ -78,3 +78,9 @@ No auth bypass, cookie session, wildcard CORS, refresh/login endpoint or synchro
 generator is installed. See [authentication ADR](../docs/decisions/0005-authenticated-job-http.md)
 for cache/rotation and session-revocation limits. Supabase/Render connectivity and
 production configuration still need deployment acceptance.
+
+Authenticated cancellation and published JSON artifact downloads are specified in
+[HTTP V1](../docs/contracts/http-jobs-v1.md). Optional private download transport
+settings are listed in [.env.example](.env.example); configure all three together.
+Authorization comes from current database membership, never from client object keys.
+See [cancellation/download acceptance](../docs/testing/cancellation-downloads.md).

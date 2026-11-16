@@ -665,3 +665,15 @@ See [ADR 0006](docs/decisions/0006-fenced-worker-publication.md),
 Next: authorized revision/artifact downloads, user cancellation/diagnostics,
 orphan retention/cleanup and deployment/provisioning/restore testing. M4 remains
 open; numeric retention and deployment sizing are still release decisions.
+
+## Cancellation/download checkpoint — 2026-11-16
+
+- [x] Authenticated, tenant-scoped, idempotent cancellation with current write-role
+  checks; queued jobs cancel immediately and running jobs lose publication rights.
+- [x] Published-artifact proxy downloads with current membership checks, authoritative
+  size/hash checks, post-fetch reauthorization and bounded response-body capacity.
+- [x] Narrow database functions and signed-request/storage HTTP regression tests.
+
+Orphan cleanup implementation awaits the explicit safety-window decision. Published
+revision retention remains separate. Live deployment and storage provisioning are
+still pending; no production credentials or services were used by these tests.
