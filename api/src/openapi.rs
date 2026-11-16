@@ -1,4 +1,6 @@
-//! Machine-readable admission contracts. Other endpoints remain documented in docs/contracts.
+mod operations;
+mod responses;
+// Machine-readable hosted API contracts; engine semantic checks remain authoritative.
 use serde_json::{Value, json};
 
 fn object(properties: Value, required: &[&str]) -> Value {
@@ -35,7 +37,7 @@ fn imported(mut schema: Value, name: &str) -> Value {
     rebase(&mut schema, name);
     schema
 }
-/// Export the supported admission subset; semantic engine checks still run after schema validation.
+/// Export the hosted API contract; semantic engine checks still run after schema validation.
 pub fn document() -> Value {
     let uuid = json!({"type":"string","format":"uuid"});
     let hash = json!({"type":"string","pattern":"^[0-9a-f]{64}$"});
@@ -57,39 +59,6 @@ pub fn document() -> Value {
         "GenerationOptions",
     );
     let mut paths = json!({});
-    for (path, id, request, success) in [
-        (
-            "/v1/onboarding/personal-workspace",
-            "onboardPersonalWorkspace",
-            "OnboardingRequest",
-            "201",
-        ),
-        (
-            "/v1/tenants/{tenant}/projects",
-            "createProject",
-            "CreateProjectRequest",
-            "201",
-        ),
-        (
-            "/v1/tenants/{tenant}/projects/{project}/jobs",
-            "submitGeneration",
-            "SubmitJobRequest",
-            "202",
-        ),
-    ] {
-        let mut parameters = Vec::new();
-        for name in ["tenant", "project"] {
-            if path.contains(&format!("{{{name}}}")) {
-                parameters.push(json!({"name":name,"in":"path","required":true,"schema":uuid}));
-            }
-        }
-        if request != "OnboardingRequest" {
-            parameters.push(json!({"name":"Idempotency-Key","in":"header","required":true,"schema":{"type":"string","minLength":1,"maxLength":128,"pattern":"^[A-Za-z0-9._:-]+$"}}));
-        }
-        let mut responses = json!({"200":{"description":"Idempotent replay"},"default":{"description":"Structured error; see endpoint Markdown contract for status semantics","content":{"application/json":{"schema":reference("Error")}}}});
-        responses[success] = json!({"description":"Created or admitted"});
-        paths[path] = json!({"post":{"operationId":id,"parameters":parameters,"requestBody":{"required":true,"content":{"application/json":{"schema":reference(request)}}},"responses":responses}});
-    }
     for path in ["/health/live", "/health/ready"] {
         paths[path] = json!({"get":{"operationId":if path.ends_with("live") {"liveness"} else {"readiness"},"security":[],"responses":{"204":{"description":"Healthy"},"503":{"description":"Not ready (readiness only)"}}}});
     }
@@ -97,5 +66,55 @@ pub fn document() -> Value {
         .as_object_mut()
         .expect("responses")
         .remove("503");
-    json!({"openapi":"3.1.0","info":{"title":"Labyrinth admission API","version":env!("CARGO_PKG_VERSION"),"description":"Admission request subset. Response payloads, discovery, downloads and admin operations are specified in docs/contracts; this document does not claim complete API coverage."},"servers":[{"url":"/"}],"security":[{"bearerAuth":[]}],"paths":paths,"components":{"securitySchemes":{"bearerAuth":{"type":"http","scheme":"bearer","bearerFormat":"JWT"}},"schemas":schemas}})
+    let mut document = json!({"openapi":"3.1.0","info":{"title":"Labyrinth hosted API","version":env!("CARGO_PKG_VERSION"),"description":"Hosted API requests, response envelopes, discovery and admin operations. Engine error details and artifact payload types are described in docs/contracts."},"servers":[{"url":"/"}],"security":[{"bearerAuth":[]}],"paths":paths,"components":{"securitySchemes":{"bearerAuth":{"type":"http","scheme":"bearer","bearerFormat":"JWT"}},"schemas":schemas}});
+    responses::extend(&mut document);
+    document
+}
+
+#[cfg(all(test, feature = "postgres-tests"))]
+pub(crate) fn assert_response(method: &str, uri: &str, status: u16, body: &Value) {
+    static DOCUMENT: std::sync::LazyLock<Value> = std::sync::LazyLock::new(document);
+    let path = uri.split('?').next().unwrap();
+    let segments: Vec<_> = path.split('/').collect();
+    let (_, item) = DOCUMENT["paths"]
+        .as_object()
+        .unwrap()
+        .iter()
+        .find(|(pattern, _)| {
+            let parts: Vec<_> = pattern.split('/').collect();
+            parts.len() == segments.len()
+                && parts
+                    .iter()
+                    .zip(&segments)
+                    .all(|(a, b)| (a.starts_with('{') && a.ends_with('}')) || a == b)
+        })
+        .unwrap_or_else(|| panic!("undocumented route {method} {path}"));
+    let operation = &item[method.to_ascii_lowercase()];
+    assert!(operation.is_object(), "undocumented method {method} {path}");
+    let responses = &operation["responses"];
+    let response = responses
+        .get(status.to_string())
+        .unwrap_or(&responses["default"]);
+    let expected = &response["content"]["application/json"]["schema"];
+    assert!(
+        expected.is_object(),
+        "undocumented response {status} {path}"
+    );
+    let mut schema = DOCUMENT.clone();
+    schema
+        .as_object_mut()
+        .unwrap()
+        .extend(expected.as_object().unwrap().clone());
+    let validator = jsonschema::options()
+        .should_validate_formats(true)
+        .build(&schema)
+        .unwrap();
+    let errors: Vec<_> = validator
+        .iter_errors(body)
+        .map(|e| format!("{} at {}", e, e.instance_path))
+        .collect();
+    assert!(
+        errors.is_empty(),
+        "response contract mismatch {method} {path} {status}: {errors:?}"
+    );
 }

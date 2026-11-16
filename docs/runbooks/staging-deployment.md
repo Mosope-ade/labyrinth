@@ -3,7 +3,8 @@
 Status: prepared for review. Local tests and configuration validation do not mean
 that Render/Supabase deployment, restore, or production capacity is accepted.
 
-1. Confirm region, environment, instance budget and the exact reviewed Git commit.
+1. Use the user-approved zero-budget development target and confirm region,
+   environment and the exact reviewed Git commit.
    The current example proposes Frankfurt for Render and Supabase eu-central-1.
    Preserve dev/staging/prod separation. Do not provision or import a paid Blueprint
    until its resources and charges are explicitly approved.
@@ -25,7 +26,10 @@ that Render/Supabase deployment, restore, or production capacity is accepted.
    templates. Migration/maintenance secrets belong only to one-off operator jobs.
    Supply private storage credentials separately; verify the provider credential's
    actual scopes/permissions before accepting the deployment.
-7. Deploy one API process and one worker process with the distinct commands. API
+7. Deploy the API on Render Free; run the worker on an operator-controlled machine
+   using its separate environment and the same verified runtime image. Generation
+   is available only while that machine is running. Do not create a paid Render
+   worker or reduce the approved engine memory limits to fit API compute. API
    binds 0.0.0.0:10000 behind Render TLS. The worker has no public generation listener.
    Ensure /usr/bin/prlimit is present and hard child limits are enforced. Verify
    /health/live and /health/ready without exposing database/provider errors.

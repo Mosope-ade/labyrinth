@@ -129,7 +129,9 @@ impl Fixture {
             .unwrap();
         let code = response.status();
         let bytes = to_bytes(response.into_body(), 65536).await.unwrap();
-        (code, serde_json::from_slice(&bytes).unwrap())
+        let value = serde_json::from_slice(&bytes).unwrap();
+        crate::openapi::assert_response(method, path, code.as_u16(), &value);
+        (code, value)
     }
 }
 #[tokio::test]

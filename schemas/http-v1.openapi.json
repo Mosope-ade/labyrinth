@@ -1,6 +1,964 @@
 {
   "components": {
     "schemas": {
+      "AdminCancelRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "confirm_job": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expected_state": {
+            "$ref": "#/components/schemas/JobState"
+          }
+        },
+        "required": [
+          "confirm_job",
+          "expected_state"
+        ],
+        "type": "object"
+      },
+      "AdminJob": {
+        "additionalProperties": false,
+        "properties": {
+          "attempts": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "job_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "project_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/JobState"
+          },
+          "tenant_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attempts",
+          "created_at",
+          "job_id",
+          "project_id",
+          "state",
+          "tenant_id"
+        ],
+        "type": "object"
+      },
+      "AdminOverview": {
+        "additionalProperties": false,
+        "properties": {
+          "ai_telemetry": {
+            "additionalProperties": false,
+            "properties": {
+              "available": {
+                "const": false
+              }
+            },
+            "required": [
+              "available"
+            ],
+            "type": "object"
+          },
+          "artifact_bytes": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "attempt_counts": {
+            "additionalProperties": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          "average_completed_attempt_seconds": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "enabled_users": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "job_counts": {
+            "additionalProperties": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "type": "object"
+          },
+          "projects": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "tenants": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ai_telemetry",
+          "artifact_bytes",
+          "attempt_counts",
+          "average_completed_attempt_seconds",
+          "enabled_users",
+          "job_counts",
+          "projects",
+          "tenants"
+        ],
+        "type": "object"
+      },
+      "AdminTenant": {
+        "additionalProperties": false,
+        "properties": {
+          "artifact_bytes": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "max_active_jobs": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "max_projects": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project_count": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "suspended": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "artifact_bytes",
+          "id",
+          "max_active_jobs",
+          "max_projects",
+          "project_count",
+          "suspended"
+        ],
+        "type": "object"
+      },
+      "AdminTenantPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminTenant"
+            },
+            "type": "array"
+          },
+          "next_after": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_after"
+        ],
+        "type": "object"
+      },
+      "AdminUser": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "suspended": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "created_at",
+          "id",
+          "suspended"
+        ],
+        "type": "object"
+      },
+      "AdminUserPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AdminUser"
+            },
+            "type": "array"
+          },
+          "next_after": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_after"
+        ],
+        "type": "object"
+      },
+      "AdmittedJob": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "state": {
+            "$ref": "#/components/schemas/JobState"
+          }
+        },
+        "required": [
+          "job_id",
+          "replayed",
+          "state"
+        ],
+        "type": "object"
+      },
+      "ArtifactName": {
+        "enum": [
+          "manifest.json",
+          "bom.json",
+          "catalog.json",
+          "decisions.json",
+          "firewall.json",
+          "ipam.json",
+          "options.json",
+          "provenance.json",
+          "requirements.json",
+          "routing.json",
+          "selection.json",
+          "topology.json",
+          "verification.json"
+        ],
+        "type": "string"
+      },
+      "Attempt": {
+        "additionalProperties": false,
+        "properties": {
+          "attempt_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "attempt_number": {
+            "maximum": 3,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "diagnostic": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Diagnostic"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "retry_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "retry_scheduled": {
+            "type": "boolean"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "attempt_id",
+          "attempt_number",
+          "diagnostic",
+          "finished_at",
+          "retry_at",
+          "retry_scheduled",
+          "started_at"
+        ],
+        "type": "object"
+      },
+      "Attempts": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Attempt"
+            },
+            "type": "array"
+          },
+          "job_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "job_id"
+        ],
+        "type": "object"
+      },
+      "AuditPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditRecord"
+            },
+            "type": "array"
+          },
+          "next_before": {
+            "anyOf": [
+              {
+                "pattern": "^[1-9][0-9]*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_before"
+        ],
+        "type": "object"
+      },
+      "AuditRecord": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "pattern": "^[1-9][0-9]*$",
+            "type": "string"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "operator_principal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcome": {
+            "enum": [
+              "allowed",
+              "denied",
+              "failed"
+            ],
+            "type": "string"
+          },
+          "target_kind": {
+            "type": "string"
+          },
+          "target_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "action",
+          "actor_id",
+          "id",
+          "occurred_at",
+          "operator_principal",
+          "outcome",
+          "target_kind",
+          "target_reference"
+        ],
+        "type": "object"
+      },
+      "CancelledJob": {
+        "additionalProperties": false,
+        "properties": {
+          "job_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/JobState"
+          }
+        },
+        "required": [
+          "job_id",
+          "state"
+        ],
+        "type": "object"
+      },
+      "CatalogAdmission": {
+        "additionalProperties": false,
+        "properties": {
+          "admitted": {
+            "type": "boolean"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "admitted",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "CatalogAdmissionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "admitted": {
+            "type": "boolean"
+          },
+          "confirm_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "expected_admitted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "admitted",
+          "confirm_sha256",
+          "expected_admitted"
+        ],
+        "type": "object"
+      },
+      "CatalogBundle": {
+        "$defs": {
+          "Archetype": {
+            "additionalProperties": false,
+            "properties": {
+              "features": {
+                "items": {
+                  "$ref": "#/components/schemas/CatalogBundle/$defs/Feature"
+                },
+                "maxItems": 32,
+                "type": "array"
+              },
+              "id": {
+                "$ref": "#/components/schemas/CatalogBundle/$defs/ArchetypeId"
+              },
+              "operating_modes": {
+                "items": {
+                  "$ref": "#/components/schemas/CatalogBundle/$defs/OperatingMode"
+                },
+                "maxItems": 32,
+                "minItems": 1,
+                "type": "array"
+              },
+              "poe_budget_watts": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "port_groups": {
+                "items": {
+                  "$ref": "#/components/schemas/CatalogBundle/$defs/PortGroup"
+                },
+                "maxItems": 32,
+                "minItems": 1,
+                "type": "array"
+              },
+              "reference_hints": {
+                "items": {
+                  "$ref": "#/components/schemas/CatalogBundle/$defs/ReferenceHint"
+                },
+                "maxItems": 32,
+                "type": "array"
+              },
+              "relative_cost_tier": {
+                "format": "uint8",
+                "maximum": 255,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "roles": {
+                "items": {
+                  "$ref": "#/components/schemas/CatalogBundle/$defs/DeviceRole"
+                },
+                "maxItems": 9,
+                "minItems": 1,
+                "type": "array"
+              }
+            },
+            "required": [
+              "id",
+              "roles",
+              "relative_cost_tier",
+              "features",
+              "port_groups",
+              "operating_modes",
+              "reference_hints"
+            ],
+            "type": "object"
+          },
+          "ArchetypeId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "Breakout": {
+            "additionalProperties": false,
+            "properties": {
+              "child_speed_mbps": {
+                "format": "uint64",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "children_per_port": {
+                "format": "uint16",
+                "maximum": 65535,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "children_per_port",
+              "child_speed_mbps"
+            ],
+            "type": "object"
+          },
+          "DeviceRole": {
+            "enum": [
+              "router",
+              "core_switch",
+              "distribution_switch",
+              "access_switch",
+              "firewall",
+              "wan_edge",
+              "host",
+              "access_point",
+              "external_network"
+            ],
+            "type": "string"
+          },
+          "Feature": {
+            "enum": [
+              "routing",
+              "switching",
+              "vlan",
+              "ospf",
+              "bgp",
+              "static_routing",
+              "firewall",
+              "ips",
+              "vpn",
+              "nat",
+              "lacp",
+              "ecmp",
+              "poe",
+              "high_availability",
+              "rapid_spanning_tree",
+              "session_steering"
+            ],
+            "type": "string"
+          },
+          "Media": {
+            "enum": [
+              "copper",
+              "fiber",
+              "virtual"
+            ],
+            "type": "string"
+          },
+          "ModeId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "OperatingMode": {
+            "additionalProperties": false,
+            "properties": {
+              "features": {
+                "items": {
+                  "$ref": "#/components/schemas/CatalogBundle/$defs/Feature"
+                },
+                "maxItems": 32,
+                "type": "array"
+              },
+              "id": {
+                "$ref": "#/components/schemas/CatalogBundle/$defs/ModeId"
+              },
+              "throughput_mbps": {
+                "format": "uint64",
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "features"
+            ],
+            "type": "object"
+          },
+          "PortGroup": {
+            "additionalProperties": false,
+            "properties": {
+              "breakout": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/CatalogBundle/$defs/Breakout"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "count": {
+                "format": "uint16",
+                "maximum": 65535,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "id": {
+                "$ref": "#/components/schemas/CatalogBundle/$defs/PortGroupId"
+              },
+              "media": {
+                "$ref": "#/components/schemas/CatalogBundle/$defs/Media"
+              },
+              "poe_watts_per_port": {
+                "format": "uint16",
+                "maximum": 65535,
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "shared_capacity_mbps": {
+                "format": "uint64",
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "speeds_mbps": {
+                "items": {
+                  "format": "uint64",
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "maxItems": 16,
+                "minItems": 1,
+                "type": "array"
+              }
+            },
+            "required": [
+              "id",
+              "count",
+              "speeds_mbps",
+              "media"
+            ],
+            "type": "object"
+          },
+          "PortGroupId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "ReferenceHint": {
+            "additionalProperties": false,
+            "properties": {
+              "description": {
+                "maxLength": 256,
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "description"
+            ],
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "archetypes": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogBundle/$defs/Archetype"
+            },
+            "maxItems": 256,
+            "minItems": 1,
+            "type": "array"
+          },
+          "schema_version": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "schema_version",
+          "version",
+          "archetypes"
+        ],
+        "title": "CatalogBundle",
+        "type": "object"
+      },
+      "CatalogDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "bundle": {
+            "$ref": "#/components/schemas/CatalogBundle"
+          },
+          "catalog_version": {
+            "$ref": "#/components/schemas/CatalogVersion"
+          }
+        },
+        "required": [
+          "bundle",
+          "catalog_version"
+        ],
+        "type": "object"
+      },
+      "CatalogDraftRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "yaml": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "yaml"
+        ],
+        "type": "object"
+      },
+      "CatalogPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CatalogSummary"
+            },
+            "type": "array"
+          },
+          "next_after": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_after"
+        ],
+        "type": "object"
+      },
+      "CatalogPromotion": {
+        "additionalProperties": false,
+        "properties": {
+          "admitted": {
+            "type": "boolean"
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "semantic_version": {
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "admitted",
+          "replayed",
+          "semantic_version",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "CatalogPromotionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "confirm_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "expected_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "yaml": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "confirm_sha256",
+          "expected_sha256",
+          "yaml"
+        ],
+        "type": "object"
+      },
+      "CatalogSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "semantic_version": {
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "semantic_version",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "CatalogValidation": {
+        "additionalProperties": false,
+        "properties": {
+          "archetypes": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "catalog_version": {
+            "$ref": "#/components/schemas/CatalogVersion"
+          }
+        },
+        "required": [
+          "archetypes",
+          "catalog_version"
+        ],
+        "type": "object"
+      },
+      "CatalogVersion": {
+        "additionalProperties": false,
+        "properties": {
+          "semantic_version": {
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "semantic_version",
+          "sha256"
+        ],
+        "type": "object"
+      },
       "CreateProjectRequest": {
         "additionalProperties": false,
         "properties": {
@@ -12,6 +970,73 @@
         },
         "required": [
           "name"
+        ],
+        "type": "object"
+      },
+      "CreatedProject": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "head_revision_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "project_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "replayed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "created_at",
+          "head_revision_id",
+          "name",
+          "project_id",
+          "replayed"
+        ],
+        "type": "object"
+      },
+      "Diagnostic": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "outcome": {
+            "enum": [
+              "rejected",
+              "inconclusive",
+              "unavailable",
+              "conflict",
+              "cancelled",
+              "verified",
+              "unknown"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "outcome"
         ],
         "type": "object"
       },
@@ -226,6 +1251,35 @@
           "selection_search_states"
         ],
         "title": "GenerationOptions",
+        "type": "object"
+      },
+      "Identity": {
+        "additionalProperties": false,
+        "properties": {
+          "personal_tenant_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provisioned": {
+            "type": "boolean"
+          },
+          "user_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "personal_tenant_id",
+          "provisioned",
+          "user_id"
+        ],
         "type": "object"
       },
       "Intent": {
@@ -874,10 +1928,937 @@
         "title": "PartialIntent",
         "type": "object"
       },
+      "JobPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/JobSummary"
+            },
+            "type": "array"
+          },
+          "next_after": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_after"
+        ],
+        "type": "object"
+      },
+      "JobState": {
+        "enum": [
+          "queued",
+          "running",
+          "retry_wait",
+          "cancel_requested",
+          "cancelled",
+          "failed",
+          "succeeded"
+        ],
+        "type": "string"
+      },
+      "JobStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "job_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "manifest_sha256": {
+                    "pattern": "^[0-9a-f]{64}$",
+                    "type": "string"
+                  },
+                  "revision_id": {
+                    "format": "uuid",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "manifest_sha256",
+                  "revision_id"
+                ],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/JobState"
+          }
+        },
+        "required": [
+          "created_at",
+          "job_id",
+          "revision",
+          "state"
+        ],
+        "type": "object"
+      },
+      "JobSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "job_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "revision_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/JobState"
+          }
+        },
+        "required": [
+          "created_at",
+          "job_id",
+          "revision_id",
+          "state"
+        ],
+        "type": "object"
+      },
+      "Onboarding": {
+        "additionalProperties": false,
+        "properties": {
+          "max_active_jobs": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "max_projects": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "replayed": {
+            "type": "boolean"
+          },
+          "role": {
+            "enum": [
+              "owner",
+              "editor",
+              "viewer"
+            ],
+            "type": "string"
+          },
+          "tenant_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "max_active_jobs",
+          "max_projects",
+          "replayed",
+          "role",
+          "tenant_id"
+        ],
+        "type": "object"
+      },
       "OnboardingRequest": {
         "additionalProperties": false,
         "properties": {},
         "required": [],
+        "type": "object"
+      },
+      "Project": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "head_revision_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "project_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "created_at",
+          "head_revision_id",
+          "name",
+          "project_id"
+        ],
+        "type": "object"
+      },
+      "ProjectPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Project"
+            },
+            "type": "array"
+          },
+          "next_after": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_after"
+        ],
+        "type": "object"
+      },
+      "Requirements": {
+        "$defs": {
+          "AllocationPin": {
+            "additionalProperties": false,
+            "properties": {
+              "subnet": {
+                "$ref": "#/components/schemas/Requirements/$defs/Ipv4Prefix"
+              },
+              "zone": {
+                "$ref": "#/components/schemas/Requirements/$defs/ZoneId"
+              }
+            },
+            "required": [
+              "zone",
+              "subnet"
+            ],
+            "type": "object"
+          },
+          "ArchetypeId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "BlueprintChoice": {
+            "enum": [
+              "automatic",
+              "hub_spoke",
+              "three_tier_campus",
+              "spine_leaf"
+            ],
+            "type": "string"
+          },
+          "CorePin": {
+            "additionalProperties": false,
+            "properties": {
+              "archetype": {
+                "$ref": "#/components/schemas/Requirements/$defs/ArchetypeId"
+              },
+              "device": {
+                "$ref": "#/components/schemas/Requirements/$defs/DeviceId"
+              },
+              "site": {
+                "$ref": "#/components/schemas/Requirements/$defs/SiteId"
+              }
+            },
+            "required": [
+              "device",
+              "site",
+              "archetype"
+            ],
+            "type": "object"
+          },
+          "DeviceId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "EndpointAttachment": {
+            "additionalProperties": false,
+            "description": "Per-endpoint physical attachment. Missing attachment defaults to 1 Gbps copper.",
+            "properties": {
+              "media": {
+                "$ref": "#/components/schemas/Requirements/$defs/Media"
+              },
+              "poe_watts_per_endpoint": {
+                "format": "uint16",
+                "maximum": 65535,
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "speed_mbps": {
+                "format": "uint64",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "speed_mbps",
+              "media"
+            ],
+            "type": "object"
+          },
+          "FailureDomainId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "Feature": {
+            "enum": [
+              "routing",
+              "switching",
+              "vlan",
+              "ospf",
+              "bgp",
+              "static_routing",
+              "firewall",
+              "ips",
+              "vpn",
+              "nat",
+              "lacp",
+              "ecmp",
+              "poe",
+              "high_availability",
+              "rapid_spanning_tree",
+              "session_steering"
+            ],
+            "type": "string"
+          },
+          "FlowId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "FlowPolicy": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "$ref": "#/components/schemas/Requirements/$defs/PolicyAction"
+              },
+              "from_zone": {
+                "$ref": "#/components/schemas/Requirements/$defs/ZoneId"
+              },
+              "id": {
+                "$ref": "#/components/schemas/Requirements/$defs/PolicyId"
+              },
+              "service": {
+                "$ref": "#/components/schemas/Requirements/$defs/ServiceMatch"
+              },
+              "to_zone": {
+                "$ref": "#/components/schemas/Requirements/$defs/ZoneId"
+              }
+            },
+            "required": [
+              "id",
+              "from_zone",
+              "to_zone",
+              "action",
+              "service"
+            ],
+            "type": "object"
+          },
+          "Ipv4Prefix": {
+            "description": "Canonical IPv4 network CIDR; host bits are rejected, never silently discarded.",
+            "type": "string"
+          },
+          "Media": {
+            "enum": [
+              "copper",
+              "fiber",
+              "virtual"
+            ],
+            "type": "string"
+          },
+          "PolicyAction": {
+            "enum": [
+              "allow",
+              "deny"
+            ],
+            "type": "string"
+          },
+          "PolicyId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "PortRange": {
+            "additionalProperties": false,
+            "properties": {
+              "end": {
+                "format": "uint16",
+                "maximum": 65535,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "start": {
+                "format": "uint16",
+                "maximum": 65535,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ],
+            "type": "object"
+          },
+          "Protocol": {
+            "enum": [
+              "any",
+              "tcp",
+              "udp",
+              "icmp"
+            ],
+            "type": "string"
+          },
+          "RedundancyTier": {
+            "enum": [
+              "tier0_none",
+              "tier1_link",
+              "tier2_device",
+              "tier3_site"
+            ],
+            "type": "string"
+          },
+          "ResolvedSite": {
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Requirements/$defs/SiteId"
+              },
+              "isp_failure_domains": {
+                "items": {
+                  "$ref": "#/components/schemas/Requirements/$defs/FailureDomainId"
+                },
+                "type": [
+                  "array",
+                  "null"
+                ]
+              },
+              "location": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "role": {
+                "$ref": "#/components/schemas/Requirements/$defs/SiteRole"
+              },
+              "zones": {
+                "items": {
+                  "$ref": "#/components/schemas/Requirements/$defs/ResolvedZone"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "id",
+              "role",
+              "zones"
+            ],
+            "type": "object"
+          },
+          "ResolvedZone": {
+            "properties": {
+              "endpoint_attachment": {
+                "$ref": "#/components/schemas/Requirements/$defs/EndpointAttachment"
+              },
+              "endpoint_count": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "id": {
+                "$ref": "#/components/schemas/Requirements/$defs/ZoneId"
+              },
+              "poe_load_watts": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "required_features": {
+                "items": {
+                  "$ref": "#/components/schemas/Requirements/$defs/Feature"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "id",
+              "endpoint_count",
+              "required_features",
+              "endpoint_attachment"
+            ],
+            "type": "object"
+          },
+          "RevisionId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "ServiceMatch": {
+            "additionalProperties": false,
+            "properties": {
+              "destination_ports": {
+                "items": {
+                  "$ref": "#/components/schemas/Requirements/$defs/PortRange"
+                },
+                "type": "array"
+              },
+              "protocol": {
+                "$ref": "#/components/schemas/Requirements/$defs/Protocol"
+              }
+            },
+            "required": [
+              "protocol",
+              "destination_ports"
+            ],
+            "type": "object"
+          },
+          "SessionCohort": {
+            "additionalProperties": false,
+            "properties": {
+              "session_peak_mbps": {
+                "format": "uint64",
+                "minimum": 1,
+                "type": "integer"
+              },
+              "simultaneous_sessions": {
+                "format": "uint32",
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "session_peak_mbps",
+              "simultaneous_sessions"
+            ],
+            "type": "object"
+          },
+          "SessionGrowth": {
+            "enum": [
+              "rates",
+              "concurrency"
+            ],
+            "type": "string"
+          },
+          "SiteId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "SiteRole": {
+            "enum": [
+              "hub",
+              "branch",
+              "campus",
+              "data_center",
+              "other"
+            ],
+            "type": "string"
+          },
+          "TrafficDemand": {
+            "additionalProperties": false,
+            "properties": {
+              "distribution": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Requirements/$defs/TrafficDistribution"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "from_zone": {
+                "$ref": "#/components/schemas/Requirements/$defs/ZoneId"
+              },
+              "id": {
+                "$ref": "#/components/schemas/Requirements/$defs/FlowId"
+              },
+              "peak_mbps": {
+                "format": "uint64",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "to_zone": {
+                "$ref": "#/components/schemas/Requirements/$defs/ZoneId"
+              }
+            },
+            "required": [
+              "id",
+              "from_zone",
+              "to_zone",
+              "peak_mbps"
+            ],
+            "type": "object"
+          },
+          "TrafficDistribution": {
+            "description": "Session cohorts are simultaneous upper-bound reservations, not average rates.\nSessions remain indivisible even when a demand may use multiple paths.",
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "const": "single_path",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "cohorts": {
+                    "items": {
+                      "$ref": "#/components/schemas/Requirements/$defs/SessionCohort"
+                    },
+                    "maxItems": 64,
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "growth": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/Requirements/$defs/SessionGrowth"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mode": {
+                    "const": "sessions",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "cohorts"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "UpdateMode": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "const": "stateless_redesign",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "base_revision": {
+                    "$ref": "#/components/schemas/Requirements/$defs/RevisionId"
+                  },
+                  "core_pins": {
+                    "items": {
+                      "$ref": "#/components/schemas/Requirements/$defs/CorePin"
+                    },
+                    "type": "array"
+                  },
+                  "ipam_pins": {
+                    "items": {
+                      "$ref": "#/components/schemas/Requirements/$defs/AllocationPin"
+                    },
+                    "type": "array"
+                  },
+                  "mode": {
+                    "const": "incremental_update",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "base_revision",
+                  "ipam_pins",
+                  "core_pins"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "WanService": {
+            "additionalProperties": false,
+            "description": "Explicit confirmed attachment to an abstract WAN service. Matching provider\nnames alone never imply connectivity. Each connected peer must reciprocate.",
+            "properties": {
+              "committed_bandwidth_mbps": {
+                "format": "uint64",
+                "minimum": 1,
+                "type": "integer"
+              },
+              "connected_sites": {
+                "items": {
+                  "$ref": "#/components/schemas/Requirements/$defs/SiteId"
+                },
+                "maxItems": 63,
+                "type": "array"
+              },
+              "provider_failure_domain": {
+                "$ref": "#/components/schemas/Requirements/$defs/FailureDomainId"
+              },
+              "site": {
+                "$ref": "#/components/schemas/Requirements/$defs/SiteId"
+              }
+            },
+            "required": [
+              "site",
+              "provider_failure_domain",
+              "committed_bandwidth_mbps",
+              "connected_sites"
+            ],
+            "type": "object"
+          },
+          "ZoneId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          }
+        },
+        "properties": {
+          "blueprint": {
+            "$ref": "#/components/schemas/Requirements/$defs/BlueprintChoice"
+          },
+          "demands": {
+            "items": {
+              "$ref": "#/components/schemas/Requirements/$defs/TrafficDemand"
+            },
+            "type": "array"
+          },
+          "excluded_ipv4": {
+            "items": {
+              "$ref": "#/components/schemas/Requirements/$defs/Ipv4Prefix"
+            },
+            "type": "array"
+          },
+          "growth_percent": {
+            "format": "uint8",
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "ipv4_pool": {
+            "$ref": "#/components/schemas/Requirements/$defs/Ipv4Prefix"
+          },
+          "name": {
+            "type": "string"
+          },
+          "policies": {
+            "items": {
+              "$ref": "#/components/schemas/Requirements/$defs/FlowPolicy"
+            },
+            "type": "array"
+          },
+          "redundancy": {
+            "$ref": "#/components/schemas/Requirements/$defs/RedundancyTier"
+          },
+          "schema_version": {
+            "type": "string"
+          },
+          "sites": {
+            "items": {
+              "$ref": "#/components/schemas/Requirements/$defs/ResolvedSite"
+            },
+            "type": "array"
+          },
+          "spare_port_target_percent": {
+            "format": "uint8",
+            "maximum": 255,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "update": {
+            "$ref": "#/components/schemas/Requirements/$defs/UpdateMode"
+          },
+          "wan_services": {
+            "items": {
+              "$ref": "#/components/schemas/Requirements/$defs/WanService"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "schema_version",
+          "name",
+          "sites",
+          "demands",
+          "policies",
+          "wan_services",
+          "redundancy",
+          "blueprint",
+          "growth_percent",
+          "spare_port_target_percent",
+          "ipv4_pool",
+          "excluded_ipv4",
+          "update"
+        ],
+        "title": "IntentData",
+        "type": "object"
+      },
+      "Revision": {
+        "additionalProperties": false,
+        "properties": {
+          "catalog_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "job_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "manifest_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "revision_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "catalog_sha256",
+          "created_at",
+          "job_id",
+          "manifest_sha256",
+          "revision_id"
+        ],
+        "type": "object"
+      },
+      "RevisionDetail": {
+        "additionalProperties": false,
+        "properties": {
+          "artifacts": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "$ref": "#/components/schemas/ArtifactName"
+                },
+                "sha256": {
+                  "pattern": "^[0-9a-f]{64}$",
+                  "type": "string"
+                },
+                "size_bytes": {
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "name",
+                "sha256",
+                "size_bytes"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "catalog_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "job_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "manifest_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "revision_id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "artifacts",
+          "catalog_sha256",
+          "created_at",
+          "job_id",
+          "manifest_sha256",
+          "revision_id"
+        ],
+        "type": "object"
+      },
+      "RevisionPage": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Revision"
+            },
+            "type": "array"
+          },
+          "next_after": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next_after"
+        ],
         "type": "object"
       },
       "SubmitJobRequest": {
@@ -911,6 +2892,90 @@
           "expected_head_revision_id"
         ],
         "type": "object"
+      },
+      "Suspension": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "suspended": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "suspended"
+        ],
+        "type": "object"
+      },
+      "SuspensionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "confirm_target": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "expected_suspended": {
+            "type": "boolean"
+          },
+          "suspended": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "confirm_target",
+          "expected_suspended",
+          "suspended"
+        ],
+        "type": "object"
+      },
+      "ValidateIntentRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "intent": {
+            "$ref": "#/components/schemas/Intent"
+          },
+          "options": {
+            "$ref": "#/components/schemas/GenerationOptions"
+          }
+        },
+        "required": [
+          "intent"
+        ],
+        "type": "object"
+      },
+      "ValidatedIntent": {
+        "additionalProperties": false,
+        "properties": {
+          "assurance": {
+            "const": "requirements_validated_not_generated"
+          },
+          "provenance": {
+            "additionalProperties": {
+              "enum": [
+                "provided",
+                "engine_default"
+              ],
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "requirements": {
+            "$ref": "#/components/schemas/Requirements"
+          },
+          "status": {
+            "const": "ready"
+          }
+        },
+        "required": [
+          "assurance",
+          "provenance",
+          "requirements",
+          "status"
+        ],
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -922,8 +2987,8 @@
     }
   },
   "info": {
-    "description": "Admission request subset. Response payloads, discovery, downloads and admin operations are specified in docs/contracts; this document does not claim complete API coverage.",
-    "title": "Labyrinth admission API",
+    "description": "Hosted API requests, response envelopes, discovery and admin operations. Engine error details and artifact payload types are described in docs/contracts.",
+    "title": "Labyrinth hosted API",
     "version": "0.1.0"
   },
   "openapi": "3.1.0",
@@ -953,6 +3018,568 @@
         "security": []
       }
     },
+    "/v1/admin/audit": {
+      "get": {
+        "description": "Requires current operator-granted admin role; grants no automatic access to private topology artifacts. Confirmations and expected state are checked by the server.",
+        "operationId": "adminAudit",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "before",
+            "schema": {
+              "format": "int64",
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPage"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        },
+        "x-required-role": "admin"
+      }
+    },
+    "/v1/admin/catalogs": {
+      "post": {
+        "description": "Requires current operator-granted admin role; grants no automatic access to private topology artifacts. Confirmations and expected state are checked by the server.",
+        "operationId": "adminPromoteCatalog",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogPromotionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogPromotion"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        },
+        "x-required-role": "admin"
+      }
+    },
+    "/v1/admin/catalogs/validate": {
+      "post": {
+        "description": "Requires current operator-granted admin role; grants no automatic access to private topology artifacts. Confirmations and expected state are checked by the server.",
+        "operationId": "adminValidateCatalog",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogDraftRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogValidation"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        },
+        "x-required-role": "admin"
+      }
+    },
+    "/v1/admin/catalogs/{hash}/admission": {
+      "post": {
+        "description": "Requires current operator-granted admin role; grants no automatic access to private topology artifacts. Confirmations and expected state are checked by the server.",
+        "operationId": "adminCatalogAdmission",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "hash",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CatalogAdmissionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogAdmission"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        },
+        "x-required-role": "admin"
+      }
+    },
+    "/v1/admin/overview": {
+      "get": {
+        "description": "Requires current operator-granted admin role; grants no automatic access to private topology artifacts. Confirmations and expected state are checked by the server.",
+        "operationId": "adminOverview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminOverview"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        },
+        "x-required-role": "admin"
+      }
+    },
+    "/v1/admin/tenants": {
+      "get": {
+        "description": "Requires current operator-granted admin role; grants no automatic access to private topology artifacts. Confirmations and expected state are checked by the server.",
+        "operationId": "adminTenants",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminTenantPage"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        },
+        "x-required-role": "admin"
+      }
+    },
+    "/v1/admin/tenants/{id}/suspension": {
+      "post": {
+        "description": "Requires current operator-granted admin role; grants no automatic access to private topology artifacts. Confirmations and expected state are checked by the server.",
+        "operationId": "adminSuspendTenant",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspensionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Suspension"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        },
+        "x-required-role": "admin"
+      }
+    },
+    "/v1/admin/tenants/{tenant}/projects/{project}/jobs/{job}": {
+      "get": {
+        "description": "Requires current operator-granted admin role; grants no automatic access to private topology artifacts. Confirmations and expected state are checked by the server.",
+        "operationId": "adminGetJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminJob"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        },
+        "x-required-role": "admin"
+      }
+    },
+    "/v1/admin/tenants/{tenant}/projects/{project}/jobs/{job}/cancel": {
+      "post": {
+        "description": "Requires current operator-granted admin role; grants no automatic access to private topology artifacts. Confirmations and expected state are checked by the server.",
+        "operationId": "adminCancelJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminCancelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelledJob"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        },
+        "x-required-role": "admin"
+      }
+    },
+    "/v1/admin/users": {
+      "get": {
+        "description": "Requires current operator-granted admin role; grants no automatic access to private topology artifacts. Confirmations and expected state are checked by the server.",
+        "operationId": "adminUsers",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserPage"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        },
+        "x-required-role": "admin"
+      }
+    },
+    "/v1/admin/users/{id}/suspension": {
+      "post": {
+        "description": "Requires current operator-granted admin role; grants no automatic access to private topology artifacts. Confirmations and expected state are checked by the server.",
+        "operationId": "adminSuspendUser",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SuspensionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Suspension"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        },
+        "x-required-role": "admin"
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "operationId": "inspectIdentity",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Identity"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        }
+      }
+    },
     "/v1/onboarding/personal-workspace": {
       "post": {
         "operationId": "onboardPersonalWorkspace",
@@ -969,10 +3596,24 @@
         },
         "responses": {
           "200": {
-            "description": "Idempotent replay"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Onboarding"
+                }
+              }
+            },
+            "description": "Successful response"
           },
           "201": {
-            "description": "Created or admitted"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Onboarding"
+                }
+              }
+            },
+            "description": "Successful response"
           },
           "default": {
             "content": {
@@ -982,12 +3623,217 @@
                 }
               }
             },
-            "description": "Structured error; see endpoint Markdown contract for status semantics"
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenant}/catalogs": {
+      "get": {
+        "operationId": "listCatalogs",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "schema": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogPage"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenant}/catalogs/{hash}": {
+      "get": {
+        "operationId": "getCatalog",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "hash",
+            "required": true,
+            "schema": {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogDetail"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenant}/intent/validate": {
+      "post": {
+        "operationId": "validateIntent",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateIntentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidatedIntent"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
           }
         }
       }
     },
     "/v1/tenants/{tenant}/projects": {
+      "get": {
+        "operationId": "listProjects",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectPage"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        }
+      },
       "post": {
         "operationId": "createProject",
         "parameters": [
@@ -1024,10 +3870,24 @@
         },
         "responses": {
           "200": {
-            "description": "Idempotent replay"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedProject"
+                }
+              }
+            },
+            "description": "Successful response"
           },
           "201": {
-            "description": "Created or admitted"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedProject"
+                }
+              }
+            },
+            "description": "Successful response"
           },
           "default": {
             "content": {
@@ -1037,12 +3897,122 @@
                 }
               }
             },
-            "description": "Structured error; see endpoint Markdown contract for status semantics"
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenant}/projects/{project}": {
+      "get": {
+        "operationId": "getProject",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Project"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
           }
         }
       }
     },
     "/v1/tenants/{tenant}/projects/{project}/jobs": {
+      "get": {
+        "operationId": "listJobs",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobPage"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        }
+      },
       "post": {
         "operationId": "submitGeneration",
         "parameters": [
@@ -1088,10 +4058,32 @@
         },
         "responses": {
           "200": {
-            "description": "Idempotent replay"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdmittedJob"
+                }
+              }
+            },
+            "description": "Successful response"
           },
           "202": {
-            "description": "Created or admitted"
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdmittedJob"
+                }
+              }
+            },
+            "description": "Successful response",
+            "headers": {
+              "Location": {
+                "description": "Scoped job status URL",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
           },
           "default": {
             "content": {
@@ -1101,7 +4093,375 @@
                 }
               }
             },
-            "description": "Structured error; see endpoint Markdown contract for status semantics"
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenant}/projects/{project}/jobs/{job}": {
+      "get": {
+        "operationId": "getJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenant}/projects/{project}/jobs/{job}/attempts": {
+      "get": {
+        "operationId": "listAttempts",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Attempts"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenant}/projects/{project}/jobs/{job}/cancel": {
+      "post": {
+        "operationId": "cancelJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelledJob"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenant}/projects/{project}/revisions": {
+      "get": {
+        "operationId": "listRevisions",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 25,
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "after",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevisionPage"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenant}/projects/{project}/revisions/{revision}": {
+      "get": {
+        "operationId": "getRevision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revision",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevisionDetail"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenant}/projects/{project}/revisions/{revision}/artifacts/{name}": {
+      "get": {
+        "operationId": "downloadArtifact",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "revision",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ArtifactName"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Verified artifact JSON file, streamed as an attachment. Payload type depends on the allowlisted file name.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "const": "no-store"
+                }
+              },
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "ETag": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
           }
         }
       }

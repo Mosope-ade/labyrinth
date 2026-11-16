@@ -744,3 +744,26 @@ authority fields and missing expected-head preconditions are rejected. This init
 export is a request subset; typed responses and discovery/admin/download coverage
 remain necessary before it can serve as the complete client SDK contract. Existing
 Markdown endpoint contracts remain authoritative for those behaviors.
+
+## Zero-budget development staging — 2026-11-16
+
+The user has approved free plans only; there is no project funding. Prepare Render
+Free for the API and Supabase Free for database/Auth/private Storage/queue. Because
+Render has no free background-worker plan, use the existing worker on an
+operator-controlled development machine for now. This is not always-on hosted
+generation: jobs wait while that worker is offline. Preserve engine isolation,
+resource limits and separate credentials. Cloudflare frontend/GitHub CLI distribution
+choices remain unchanged. No paid resources/add-ons or automatic upgrades are
+authorized. Confirm region availability during setup; the earlier paid staging
+proposal is superseded. See deploy/README.md for provider limits and quota handling.
+
+### Hosted API machine-readable coverage
+
+The OpenAPI export now covers current identity, onboarding, project/job/revision and
+catalog discovery/detail routes, intent validation, diagnostics, artifact download
+headers, health and admin operations. JSON response envelopes have explicit types,
+nullability, formats and private-field rejection. Admin schemas require reviewed
+confirmations/expected states and document registry-based role checks. Integration
+verification validates real HTTP responses against operation/status schemas. This
+supersedes the initial request-only export limitation. Artifact file contents and
+extensible engine error details retain their separate engineering contracts.

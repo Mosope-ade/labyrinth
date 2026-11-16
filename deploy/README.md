@@ -35,17 +35,36 @@ is not copied into the production runtime.
 
 ## Staging proposal
 
-render.staging.example.yaml proposes Frankfurt, one 0.5 CPU/512 MiB API and one
-1 CPU/2 GiB worker, separate service environments, explicit limits, a private bucket
-and automatic deployment disabled. It is a review example, not root render.yaml.
-Region/budget approval and provider access are still required before provisioning.
-Creating a Blueprint can incur charges even when automatic deployment is off.
+The current zero-budget target is one Render **Free web service** for the API,
+Supabase **Free** for PostgreSQL/Auth/private Storage/queue, and the existing worker
+on an operator-controlled development machine. Cloudflare Pages remains the future
+frontend target; GitHub Releases remains the CLI distribution target. No paid worker,
+SMTP subscription, custom domain or AI API subscription is required for structured
+JSON generation. The Frankfurt region remains a proposal, subject to availability.
 
-The worker's child address-space ceiling remains 1 GiB; 2 GiB service memory leaves
-initial parent headroom. API concurrency is initially four, not an unlimited capacity
-claim. Production sizing/HA, load/SLO and recovery targets still need measurements.
-Supabase/SMTP/provider fees are separate. See [Render pricing](https://render.com/pricing)
-and the [Blueprint specification](https://render.com/docs/blueprint-spec).
+`render.staging.example.yaml` contains only the free API; it deliberately declares no
+Render worker. Render has no free background-worker plan. Run the unchanged worker
+locally with its separate credentials and explicit limits from `worker/.env.example`.
+Its child address-space limit remains 1 GiB; allow additional parent memory on the
+host. This is a development arrangement, not an always-available hosted service.
+Jobs wait in the queue while the local worker is offline; accepted leases/retries and
+publication fencing still apply. Do not put worker credentials into the API service.
+
+Render Free services sleep after 15 idle minutes and have shared monthly usage
+limits. Supabase Free currently includes 500 MB database storage and 1 GB object
+storage and may pause after a week of inactivity. Check quotas before demos; use
+synthetic data and export independent backups. Never delete published artifacts as
+an automatic quota workaround. Auth email delivery/provider limits still require
+live acceptance; do not promise unrestricted public signup from the free setup.
+
+Select Free explicitly and keep paid add-ons disabled. Prefer no payment method;
+where one already exists, configure provider spend controls and confirm their scope
+before deployment. Reaching free quotas may interrupt service. Do not deploy the
+worker as a fake web service or add keep-alive traffic to bypass provider limits.
+No resources have been provisioned by this configuration change.
+
+Provider references (checked 2026-11-16): [Render Free](https://render.com/docs/free),
+[Supabase pricing](https://supabase.com/pricing).
 
 Validate without creating resources:
 

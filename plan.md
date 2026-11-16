@@ -807,3 +807,28 @@ See [scope and regeneration](docs/contracts/openapi-admission-v1.md).
 Remote CI on `8f9a5c9` passed engine contracts, PostgreSQL admission and the actual
 backend container build/smoke workflows. This confirms container execution, not
 provider provisioning or live staging acceptance.
+
+## Zero-budget development staging — 2026-11-16
+
+The user has approved free plans only; there is no project funding. Prepare Render
+Free for the API and Supabase Free for database/Auth/private Storage/queue. Because
+Render has no free background-worker plan, use the existing worker on an
+operator-controlled development machine for now. This is not always-on hosted
+generation: jobs wait while that worker is offline. Preserve engine isolation,
+resource limits and separate credentials. Cloudflare frontend/GitHub CLI distribution
+choices remain unchanged. No paid resources/add-ons or automatic upgrades are
+authorized. Confirm region availability during setup; the earlier paid staging
+proposal is superseded. See deploy/README.md for provider limits and quota handling.
+
+## Hosted API schema coverage checkpoint — 2026-11-16
+
+- [x] Typed response envelopes and discovery pagination for the current hosted API.
+- [x] Admin operation schemas, confirmation/expected-state inputs and explicit
+  operator-granted role metadata without private-content authority expansion.
+- [x] All registered routes, health responses and artifact download header contract.
+- [x] Real PostgreSQL-backed HTTP responses checked against operation/status schemas;
+  export freshness, references, privacy and malformed contract regression checks.
+
+This supersedes the admission-only export checkpoint. Artifact file payload types and
+engine error-detail variants remain governed by their separate contracts; OpenAPI
+models the JSON download boundary and extensible error envelope explicitly.
