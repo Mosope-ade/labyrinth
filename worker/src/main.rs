@@ -39,11 +39,34 @@ fn main() {
 
 async fn serve() -> Result<(), Error> {
     let cfg = runtime::Config::from_env()?;
+    let cleanup_window = labyrinth_worker::cleanup::window_from_env()?;
     cfg.storage.verify_private().await?;
     let db = cfg.connect().await?;
+    let cleanup_db = db.clone();
+    let cleanup = async {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        loop {
+            interval.tick().await;
+            for _ in 0..16 {
+                match labyrinth_worker::cleanup::once(&cleanup_db, &cfg.storage, cleanup_window)
+                    .await
+                {
+                    Ok(true) => {}
+                    Ok(false) => break,
+                    Err(_) => {
+                        eprintln!("orphan_cleanup_failed");
+                        break;
+                    }
+                }
+            }
+        }
+    };
+    tokio::pin!(cleanup);
     loop {
         tokio::select! {
             _ = shutdown() => break,
+            _ = &mut cleanup => break,
             result = runtime::once(&db, &cfg) => {
                 match result {
                     Ok(true) => {},

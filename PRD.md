@@ -672,5 +672,13 @@ Cancellation and published-artifact downloads now have authenticated HTTP contra
 see [HTTP V1](docs/contracts/http-jobs-v1.md). Current membership is required at
 download authorization and rechecked after private storage fetch. Downloads expose
 verified bytes without storage keys or bearer URLs. Running cancellation blocks
-publication; terminal history remains immutable. Orphan staging cleanup still needs
-its safety-window decision and implementation; published retention is unchanged.
+publication; terminal history remains immutable. Orphan staging cleanup now follows the 24-hour policy below; published retention
+remains a separate decision.
+
+The user-approved orphan staging policy is now implemented: wait at least 24 hours
+after an unsuccessful attempt ends, recheck references, and delete only its fixed
+unpublished inventory. Published artifacts/history are preserved. Recoverable
+leased cleanup and repeat sweeps handle partial deletion, crashes and late stale
+uploads. The required worker setting is LABYRINTH_ORPHAN_SAFETY_SECS=86400.
+See [cleanup V1](docs/contracts/orphan-cleanup-v1.md). This settles orphan staging
+cleanup only; published revision, project, audit and backup retention remain open.

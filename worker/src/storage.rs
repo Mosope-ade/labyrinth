@@ -229,3 +229,108 @@ mod tests {
         task.abort();
     }
 }
+
+impl crate::cleanup::OrphanStore for Storage {
+    async fn delete(&self, keys: &[String]) -> Result<()> {
+        if keys.len() != crate::package::NAMES.len() {
+            return Err(Error::Invalid);
+        }
+        let prefix = keys[0]
+            .strip_suffix(crate::package::NAMES[0])
+            .ok_or(Error::Invalid)?;
+        for (key, name) in keys.iter().zip(crate::package::NAMES) {
+            self.url(key)?;
+            if key != &format!("{prefix}{name}") {
+                return Err(Error::Invalid);
+            }
+        }
+        let url = self.base.join(&self.bucket).map_err(|_| Error::Invalid)?;
+        let response = self
+            .client
+            .delete(url)
+            .bearer_auth(&self.token)
+            .header("apikey", &self.token)
+            .header("Content-Type", "application/json")
+            .body(
+                serde_json::to_vec(&serde_json::json!({"prefixes":keys}))
+                    .map_err(|_| Error::Invalid)?,
+            )
+            .send()
+            .await
+            .map_err(|_| Error::Storage)?;
+        if response.status().is_success() {
+            Ok(())
+        } else {
+            Err(Error::Storage)
+        }
+    }
+}
+
+#[cfg(test)]
+mod cleanup_tests {
+    use super::*;
+    use crate::cleanup::OrphanStore;
+    use axum::{
+        Json, Router,
+        http::{HeaderMap, StatusCode},
+        routing::delete,
+    };
+    use std::sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    };
+    #[tokio::test]
+    async fn deletes_only_exact_inventory_with_auth_and_reports_failure() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let calls = Arc::new(AtomicUsize::new(0));
+        let requests = calls.clone();
+        let app = Router::new().route(
+            "/storage/v1/object/private",
+            delete(
+                move |headers: HeaderMap, Json(body): Json<serde_json::Value>| {
+                    let requests = requests.clone();
+                    async move {
+                        assert_eq!(headers["authorization"], "Bearer test-only");
+                        assert_eq!(headers["apikey"], "test-only");
+                        let keys = body["prefixes"].as_array().unwrap();
+                        assert_eq!(keys.len(), 13);
+                        assert!(
+                            keys.iter()
+                                .all(|k| k.as_str().unwrap().starts_with("attempts/test/"))
+                        );
+                        if requests.fetch_add(1, Ordering::SeqCst) == 0 {
+                            StatusCode::SERVICE_UNAVAILABLE
+                        } else {
+                            StatusCode::NO_CONTENT
+                        }
+                    }
+                },
+            ),
+        );
+        let task = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        let mut storage =
+            Storage::new("https://example.com", "private".into(), "test-only".into()).unwrap();
+        storage.base = Url::parse(&format!("http://{addr}/storage/v1/object/")).unwrap();
+        let keys: Vec<_> = crate::package::NAMES
+            .iter()
+            .map(|n| format!("attempts/test/{n}"))
+            .collect();
+        assert!(storage.delete(&keys).await.is_err());
+        let mut malicious = keys.clone();
+        malicious[0] = "attempts/other/bom.json".into();
+        assert!(matches!(
+            storage.delete(&malicious).await,
+            Err(Error::Invalid)
+        ));
+        let duplicates = vec![keys[0].clone(); 13];
+        assert!(matches!(
+            storage.delete(&duplicates).await,
+            Err(Error::Invalid)
+        ));
+        storage.delete(&keys).await.unwrap();
+        storage.delete(&keys).await.unwrap();
+        assert_eq!(calls.load(Ordering::SeqCst), 3);
+        task.abort();
+    }
+}

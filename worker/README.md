@@ -24,6 +24,13 @@ A failed/cancelled job publishes no partial package. Transient retries are bound
 resource exhaustion and deterministic rejection are terminal. A saved base package
 counts toward the 2 MiB serialized child-input limit. See the contract for limits.
 
-Production deployment/load testing, authorized downloads, orphan retention/cleanup
-and public cancellation/diagnostics remain separate work. No live service is
+Production deployment/load testing, published retention and richer public
+diagnostics remain separate work. Authenticated downloads/cancellation are implemented
+in the API. No live service is
 provisioned by this repository change.
+
+Orphan cleanup now runs alongside generation. Set LABYRINTH_ORPHAN_SAFETY_SECS=86400
+and grant the server-only storage credential deletion permission for staging objects.
+Published revisions are excluded. See [cleanup V1](../docs/contracts/orphan-cleanup-v1.md)
+for the terminal-age window, retries, repeat sweeps and bounded batches. Earlier
+pending-cleanup notes are superseded by this extension.

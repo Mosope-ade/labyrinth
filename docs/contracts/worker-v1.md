@@ -63,3 +63,11 @@ Failure classifications are persisted on attempts (`lease_expired`,
 `transient_failure`, `deterministic_failure`, `stale_head`, `cancelled`, `succeeded`).
 Public status currently exposes job state/revision only. Resource failures are
 terminal and logged by category; richer persistent diagnostics remain pending.
+
+## Orphan cleanup extension — 2026-11-16
+
+Workers now require LABYRINTH_ORPHAN_SAFETY_SECS (initial value 86400). A bounded
+background task removes only old unsuccessful, unreferenced attempt inventories;
+published artifacts are preserved. See [cleanup V1](orphan-cleanup-v1.md) and
+[acceptance](../testing/orphan-cleanup.md). Earlier deferred-cleanup notes are
+superseded by this extension; published revision retention remains undecided.

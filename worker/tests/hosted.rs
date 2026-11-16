@@ -284,10 +284,187 @@ async fn hosted_generation_upload_failure_recovery_publication_and_incremental_u
         .await
         .unwrap();
     assert_eq!(actual, head);
+
+    // The new attempt is young: neither uploaded nor absent objects are touched.
+    assert!(
+        !labyrinth_worker::cleanup::once(&worker, &store, 86400)
+            .await
+            .unwrap()
+    );
+    assert!(
+        labyrinth_worker::cleanup::once(&worker, &store, 86399)
+            .await
+            .is_err()
+    );
+    let published: Vec<String> =
+        sqlx::query_scalar("SELECT object_key FROM labyrinth.artifacts WHERE tenant_id=$1")
+            .bind(tenant)
+            .fetch_all(&db)
+            .await
+            .unwrap();
+    let preserved: Files = {
+        let files = store.files.lock().unwrap();
+        published
+            .iter()
+            .map(|k| (k.clone(), files[k].clone()))
+            .collect()
+    };
+    sqlx::query("UPDATE labyrinth.attempts SET ended_at=clock_timestamp()-interval '25 hours',cleanup_due_at=clock_timestamp() WHERE tenant_id=$1").bind(tenant).execute(&db).await.unwrap();
+    // Two claimers cannot concurrently own the same attempt cleanup lease.
+    let (a, b) = tokio::join!(
+        sqlx::query_scalar::<_, Option<serde_json::Value>>("SELECT labyrinth.claim_cleanup(86400)")
+            .fetch_one(&worker),
+        sqlx::query_scalar::<_, Option<serde_json::Value>>("SELECT labyrinth.claim_cleanup(86400)")
+            .fetch_one(&worker)
+    );
+    let claims: Vec<_> = [a.unwrap(), b.unwrap()].into_iter().flatten().collect();
+    assert_eq!(claims.len(), 2); // Failed upload and failed read-back: two distinct attempts.
+    assert_ne!(claims[0]["fence"], claims[1]["fence"]);
+    // Expire both claims; a replacement token fences a stale cleanup owner.
+    sqlx::query("UPDATE labyrinth.attempts SET cleanup_lease_until=clock_timestamp()-interval '1 second' WHERE tenant_id=$1 AND cleanup_token IS NOT NULL").bind(tenant).execute(&db).await.unwrap();
+    for claim in &claims {
+        let fence: Uuid = serde_json::from_value(claim["fence"].clone()).unwrap();
+        let token: Uuid = serde_json::from_value(claim["token"].clone()).unwrap();
+        let prefix: Option<String> = sqlx::query_scalar("SELECT labyrinth.check_cleanup($1,$2)")
+            .bind(fence)
+            .bind(token)
+            .fetch_one(&worker)
+            .await
+            .unwrap();
+        assert!(prefix.is_none());
+    }
+    // Partial deletion is a retryable operation; no published bytes may change.
+    store.fail.store(true, Ordering::SeqCst);
+    assert!(
+        labyrinth_worker::cleanup::once(&worker, &store, 86400)
+            .await
+            .is_err()
+    );
+    store.fail.store(false, Ordering::SeqCst);
+    sqlx::query("UPDATE labyrinth.attempts SET cleanup_due_at=clock_timestamp() WHERE tenant_id=$1 AND exit_classification<>'succeeded'").bind(tenant).execute(&db).await.unwrap();
+    for _ in 0..2 {
+        assert!(
+            labyrinth_worker::cleanup::once(&worker, &store, 86400)
+                .await
+                .unwrap()
+        );
+    }
+    assert!(
+        !labyrinth_worker::cleanup::once(&worker, &store, 86400)
+            .await
+            .unwrap()
+    );
+    for (key, bytes) in &preserved {
+        assert_eq!(store.files.lock().unwrap().get(key), Some(bytes));
+    }
+    // A late stale upload is removed on a subsequent daily tombstone sweep.
+    let prefix: String = sqlx::query_scalar(
+        "SELECT staged_prefix FROM labyrinth.attempts WHERE tenant_id=$1 AND job_id=$2",
+    )
+    .bind(tenant)
+    .bind(bad)
+    .fetch_one(&db)
+    .await
+    .unwrap();
+    let late_key = format!("{prefix}manifest.json");
+    store
+        .files
+        .lock()
+        .unwrap()
+        .insert(late_key.clone(), b"late".to_vec());
+    sqlx::query("UPDATE labyrinth.attempts SET cleanup_due_at=clock_timestamp() WHERE tenant_id=$1 AND job_id=$2").bind(tenant).bind(bad).execute(&db).await.unwrap();
+    assert!(
+        labyrinth_worker::cleanup::once(&worker, &store, 86400)
+            .await
+            .unwrap()
+    );
+    assert!(!store.files.lock().unwrap().contains_key(&late_key));
+    // Normal inserts cannot attach a published revision to a terminal failed prefix.
+    let blocked=sqlx::query("INSERT INTO labyrinth.artifacts(tenant_id,project_id,revision_id,name,object_key,sha256,size_bytes) VALUES($1,$2,$3,'manifest.json',$4,$5,1)").bind(tenant).bind(project).bind(head).bind(&late_key).bind("a".repeat(64)).execute(&db).await;
+    assert_eq!(
+        blocked.unwrap_err().as_database_error().unwrap().message(),
+        "terminal_attempt_cannot_publish"
+    );
+    let allowed:bool=sqlx::query_scalar("SELECT has_function_privilege('labyrinth_api','labyrinth.claim_cleanup(integer)','EXECUTE')").fetch_one(&db).await.unwrap();
+    assert!(!allowed);
+
+    // Publication of a fresh attempt and cleanup of an old prefix can run together.
+    store.corrupt.store(false, Ordering::SeqCst);
+    sqlx::query("UPDATE pgmq.q_labyrinth_generation_v1 SET vt=clock_timestamp()+interval '1 hour' WHERE message->>'job_id'=$1").bind(bad.to_string()).execute(&db).await.unwrap();
+    let race_job = admit(
+        &db,
+        &PreparedAdmission::new(
+            AdmissionContext {
+                actor_id: actor,
+                tenant_id: tenant,
+                project_id: project,
+                expected_head: Some(head),
+            },
+            "cleanup-publication-race",
+            RAW,
+            &Default::default(),
+            &catalog,
+        )
+        .unwrap(),
+    )
+    .await
+    .unwrap()
+    .job_id;
+    sqlx::query("UPDATE labyrinth.attempts SET cleanup_due_at=clock_timestamp() WHERE tenant_id=$1 AND job_id=$2").bind(tenant).bind(bad).execute(&db).await.unwrap();
+    let (generation, cleanup) = tokio::join!(
+        runtime::once_with_store(&worker, &cfg, &store),
+        labyrinth_worker::cleanup::once(&worker, &store, 86400)
+    );
+    assert!(generation.unwrap());
+    assert!(cleanup.unwrap());
+    assert_eq!(state(&db, race_job).await, "succeeded");
+    for (key, bytes) in &preserved {
+        assert_eq!(store.files.lock().unwrap().get(key), Some(bytes));
+    }
+    let failed_fence: Uuid =
+        sqlx::query_scalar("SELECT fence FROM labyrinth.attempts WHERE tenant_id=$1 AND job_id=$2")
+            .bind(tenant)
+            .bind(bad)
+            .fetch_one(&db)
+            .await
+            .unwrap();
+    let stale_publish: bool =
+        sqlx::query_scalar("SELECT labyrinth.publish_attempt($1,$2,$3,$4,$5,'[]'::jsonb)")
+            .bind(tenant)
+            .bind(bad)
+            .bind(failed_fence)
+            .bind(Uuid::new_v4())
+            .bind("a".repeat(64))
+            .fetch_one(&worker)
+            .await
+            .unwrap();
+    assert!(!stale_publish);
+    let reset =
+        sqlx::query("UPDATE labyrinth.attempts SET exit_classification=NULL WHERE fence=$1")
+            .bind(failed_fence)
+            .execute(&db)
+            .await;
+    assert_eq!(
+        reset.unwrap_err().as_database_error().unwrap().message(),
+        "terminal_attempt_immutable"
+    );
     worker.close().await;
     db.close().await;
     sqlx::query(&format!("DROP DATABASE {name}"))
         .execute(&admin)
         .await
         .unwrap();
+}
+
+impl labyrinth_worker::cleanup::OrphanStore for MemoryStore {
+    async fn delete(&self, keys: &[String]) -> Result<()> {
+        let mut files = self.files.lock().unwrap();
+        for (i, key) in keys.iter().enumerate() {
+            files.remove(key);
+            if i == 5 && self.fail.load(Ordering::SeqCst) {
+                return Err(Error::Storage);
+            }
+        }
+        Ok(())
+    }
 }

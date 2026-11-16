@@ -677,3 +677,18 @@ open; numeric retention and deployment sizing are still release decisions.
 Orphan cleanup implementation awaits the explicit safety-window decision. Published
 revision retention remains separate. Live deployment and storage provisioning are
 still pending; no production credentials or services were used by these tests.
+
+## Orphan cleanup checkpoint — 2026-11-16
+
+- [x] User confirmed 24-hour staging safety window; explicit worker setting 86400.
+- [x] Terminal timestamps, bounded leased cleanup claims, reference rechecks and
+  database guards that prevent failed attempts gaining publication references.
+- [x] Exact-inventory private storage deletion, partial-failure/crash recovery and
+  repeat sweeps for late stale-worker uploads.
+- [x] Real PostgreSQL/engine integration checks preserve all published bytes;
+  HTTP deletion adapter tests reject unsafe inventories and exercise retry success.
+
+See [cleanup contract](docs/contracts/orphan-cleanup-v1.md) and
+[acceptance](docs/testing/orphan-cleanup.md). This supersedes the prior pending
+orphan-window decision. Published revision retention, project/data deletion,
+restore drills, detailed diagnostics and live deployment acceptance remain open.
