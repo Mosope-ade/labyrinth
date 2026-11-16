@@ -645,3 +645,23 @@ scripted CLI credentials, frontend CORS origins and hosted deployment remain pen
 Next runtime slice: worker claim leases/fencing, supervised core execution and
 staged artifact publication. Numeric job CPU/memory/time/retry limits must be settled
 before worker execution; existing HTTP examples are not production workload SLOs.
+
+## Fenced worker checkpoint — 2026-11-16
+
+- [x] User-approved configurable initial worker policy: one job/process; lease 60s,
+  heartbeat 15s, total attempt 120s, child CPU 60s/address space 1 GiB, serialized
+  input 2 MiB/package output 32 MiB, three attempts, transient backoff 10s then 60s.
+- [x] Separate restricted worker role, immutable context reads, atomic claims,
+  queue/lease renewal, fencing, redelivery recovery and durable retry exhaustion.
+- [x] Killable supervised engine process, no inherited environment credentials,
+  deadlines and resource limits; saved requirement provenance survives restoration.
+- [x] Private attempt-specific non-overwriting uploads, byte read-back checks and
+  atomic fence/head-checked revision/artifact publication with queue acknowledgment.
+- [x] Real PostgreSQL/pgmq, real engine, storage fault injection and regression tests.
+
+See [ADR 0006](docs/decisions/0006-fenced-worker-publication.md),
+[worker contract](docs/contracts/worker-v1.md) and
+[acceptance](docs/testing/worker-publication.md).
+Next: authorized revision/artifact downloads, user cancellation/diagnostics,
+orphan retention/cleanup and deployment/provisioning/restore testing. M4 remains
+open; numeric retention and deployment sizing are still release decisions.

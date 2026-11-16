@@ -11,3 +11,18 @@ workspace = true
 
 [dependencies]
 labyrinth-engine = { path = "../engine" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+thiserror = "2"
+uuid = { version = "1", features = ["v4", "serde"] }
+sqlx = { version = "0.8.6", default-features = false, features = ["runtime-tokio", "tls-rustls-ring", "postgres", "uuid", "json"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "process", "io-util", "signal"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
+
+[features]
+postgres-tests = []
+
+[dev-dependencies]
+labyrinth-api = { path = "../api" }
+axum = "0.8"

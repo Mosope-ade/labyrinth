@@ -648,3 +648,22 @@ Before release:
 
 These decisions refine implementation; they cannot reintroduce vendor-specific
 selection, mandatory AI, local-only CLI, or scenario-specific product scope silently.
+
+## Worker implementation policy — 2026-11-16
+
+FR-12 initial execution limits are now agreed: one active job per worker process,
+60-second lease/15-second renewal, 120-second entire attempt deadline, 60 child CPU
+seconds, 1 GiB child address-space ceiling, 2 MiB serialized child input (including
+incremental base) and 32 MiB package output. Three total attempts, with 10-second
+then 60-second transient backoff. All deployment values are required explicit
+configuration. Resource exhaustion/deterministic rejection do not retry. These are
+initial safeguards; production throughput/SLOs need measurement. Parent/container
+memory limits remain part of deployment sizing. No external solver was added.
+
+The fenced worker and atomic publication path are implemented; see
+[worker contract](docs/contracts/worker-v1.md) and
+[ADR 0006](docs/decisions/0006-fenced-worker-publication.md). Current tests cover real
+engine/DB/queue execution with injected storage failures plus HTTP storage adapter
+tests. They do not claim live Supabase/Render deployment acceptance. Artifact
+download authorization, cancellation routes, richer diagnostics, orphan cleanup,
+retention and restore acceptance remain required before the hosted milestone closes.

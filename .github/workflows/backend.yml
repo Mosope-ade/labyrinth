@@ -37,4 +37,4 @@ jobs:
       - name: Real PostgreSQL migrations and admission tests
         env:
           LABYRINTH_TEST_DATABASE_URL: postgres://labyrinth_test:local-test-only@127.0.0.1:5432/labyrinth_test
-        run: cargo +1.95.0 test -p labyrinth-api --features postgres-tests --locked
+        run: cargo +1.95.0 test --workspace --all-features --locked

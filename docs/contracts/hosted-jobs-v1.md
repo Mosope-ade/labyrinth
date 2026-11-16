@@ -98,3 +98,11 @@ See [ADR 0004](../decisions/0004-transactional-admission.md) for the restricted
 role/function boundary and [database test evidence](../testing/database-admission.md).
 The admission library uses a server-authenticated subject; the JWT verifier and
 routes are documented in [HTTP V1](http-jobs-v1.md). Hosted revision UUIDs map to core `rev-<canonical UUID>` IDs.
+
+## Worker persistence/execution slice — 2026-11-16
+
+Claims, heartbeat/fencing, queue-redelivery recovery, bounded supervised execution
+and metadata publication are implemented. The agreed operational limits and exact
+interfaces are in [worker V1](worker-v1.md). Numeric retention, user cancellation,
+downloads, richer diagnostics and deployment acceptance remain open; the worker
+slice does not close all M4 acceptance cases above.
