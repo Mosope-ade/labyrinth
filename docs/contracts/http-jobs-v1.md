@@ -145,3 +145,7 @@ admission/status service to run, with authorized downloads returning 503. Provis
 a private bucket and a server-only read credential separately; never use a public
 bucket or expose worker credentials to clients. End-to-end HTTP tests use a test-only
 loopback storage fixture, not a production plaintext configuration switch.
+
+Project listing, published revision listing and artifact-inventory metadata are now
+available through [project discovery V1](project-discovery-v1.md). These reads share
+the existing bearer authentication, current tenant authorization and HTTP guards.

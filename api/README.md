@@ -84,3 +84,7 @@ Authenticated cancellation and published JSON artifact downloads are specified i
 settings are listed in [.env.example](.env.example); configure all three together.
 Authorization comes from current database membership, never from client object keys.
 See [cancellation/download acceptance](../docs/testing/cancellation-downloads.md).
+
+Clients can browse authorized projects, published revisions and artifact inventories
+through [project discovery V1](../docs/contracts/project-discovery-v1.md), using bounded
+UUID cursor pagination. Project creation/provisioning remains separate work.

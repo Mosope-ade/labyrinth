@@ -584,3 +584,169 @@ async fn downloads_only_release_authorized_published_hash_verified_bytes() {
     );
     task.abort();
 }
+
+#[tokio::test]
+async fn project_discovery_is_bounded_stable_and_tenant_scoped() {
+    let f = Fixture::new(2).await;
+    for name in ["second", "third"] {
+        sqlx::query("INSERT INTO labyrinth.projects(tenant_id,id,name) VALUES($1,$2,$3)")
+            .bind(f.tenant)
+            .bind(Uuid::new_v4())
+            .bind(name)
+            .execute(&f.admin)
+            .await
+            .unwrap();
+    }
+    let path = format!("/v1/tenants/{}/projects", f.tenant);
+    let (code, first) = f
+        .send("GET", &format!("{path}?limit=2"), json!({}), "", f.actor)
+        .await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(first["items"].as_array().unwrap().len(), 2);
+    let cursor = first["next_after"].as_str().unwrap();
+    let (code, second) = f
+        .send(
+            "GET",
+            &format!("{path}?limit=2&after={cursor}"),
+            json!({}),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(second["items"].as_array().unwrap().len(), 1);
+    assert!(second["next_after"].is_null());
+    let mut ids: Vec<_> = first["items"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .chain(second["items"].as_array().unwrap())
+        .map(|v| v["project_id"].as_str().unwrap())
+        .collect();
+    let original = ids.clone();
+    ids.sort();
+    ids.dedup();
+    assert_eq!(ids, original);
+    for query in [
+        "limit=0",
+        "limit=101",
+        "limit=-1",
+        "limit=1&limit=2",
+        "after=invalid",
+        "unknown=x",
+    ] {
+        let (code, _) = f
+            .send("GET", &format!("{path}?{query}"), json!({}), "", f.actor)
+            .await;
+        assert_eq!(code, StatusCode::BAD_REQUEST);
+    }
+    let (code, _) = f.send("GET", &path, json!({}), "", Uuid::new_v4()).await;
+    assert_eq!(code, StatusCode::FORBIDDEN);
+    sqlx::query("UPDATE labyrinth.memberships SET role='viewer' WHERE tenant_id=$1 AND user_id=$2")
+        .bind(f.tenant)
+        .bind(f.actor)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    let (code, _) = f.send("GET", &path, json!({}), "", f.actor).await;
+    assert_eq!(code, StatusCode::OK);
+    sqlx::query("UPDATE labyrinth.tenants SET suspended=true WHERE id=$1")
+        .bind(f.tenant)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    let (code, _) = f.send("GET", &path, json!({}), "", f.actor).await;
+    assert_eq!(code, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn revision_discovery_exposes_published_metadata_without_private_keys() {
+    let f = Fixture::new(4).await;
+    let mut revisions = vec![];
+    for i in 0..3 {
+        let (_, job) = f
+            .send(
+                "POST",
+                &f.path(),
+                f.body(),
+                &format!("revision-{i}"),
+                f.actor,
+            )
+            .await;
+        let job: Uuid = serde_json::from_value(job["job_id"].clone()).unwrap();
+        let revision = Uuid::new_v4();
+        sqlx::query("UPDATE labyrinth.jobs SET state='running' WHERE tenant_id=$1 AND id=$2")
+            .bind(f.tenant)
+            .bind(job)
+            .execute(&f.admin)
+            .await
+            .unwrap();
+        sqlx::query("INSERT INTO labyrinth.revisions(tenant_id,project_id,id,job_id,manifest_sha256,catalog_sha256) VALUES($1,$2,$3,$4,$5,$6)").bind(f.tenant).bind(f.project).bind(revision).bind(job).bind("a".repeat(64)).bind(&f.hash).execute(&f.admin).await.unwrap();
+        sqlx::query("INSERT INTO labyrinth.artifacts(tenant_id,project_id,revision_id,name,object_key,sha256,size_bytes) VALUES($1,$2,$3,'manifest.json',$4,$5,1)").bind(f.tenant).bind(f.project).bind(revision).bind(format!("attempts/{revision}/manifest.json")).bind("a".repeat(64)).execute(&f.admin).await.unwrap();
+        if i < 2 {
+            sqlx::query("UPDATE labyrinth.jobs SET state='succeeded' WHERE tenant_id=$1 AND id=$2")
+                .bind(f.tenant)
+                .bind(job)
+                .execute(&f.admin)
+                .await
+                .unwrap();
+        }
+        revisions.push(revision);
+    }
+    let path = format!("/v1/tenants/{}/projects/{}/revisions", f.tenant, f.project);
+    let (code, first) = f
+        .send("GET", &format!("{path}?limit=1"), json!({}), "", f.actor)
+        .await;
+    assert_eq!(code, StatusCode::OK);
+    let cursor = first["next_after"].as_str().unwrap();
+    let (code, second) = f
+        .send(
+            "GET",
+            &format!("{path}?limit=1&after={cursor}"),
+            json!({}),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(code, StatusCode::OK);
+    assert!(second["next_after"].is_null());
+    assert_ne!(
+        first["items"][0]["revision_id"],
+        second["items"][0]["revision_id"]
+    );
+    let (code, detail) = f
+        .send(
+            "GET",
+            &format!("{path}/{}", revisions[0]),
+            json!({}),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(detail["artifacts"][0]["name"], "manifest.json");
+    assert!(!detail.to_string().contains("object_key"));
+    assert!(!detail.to_string().contains("requirements"));
+    let (code, _) = f
+        .send(
+            "GET",
+            &format!("{path}/{}", revisions[2]),
+            json!({}),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(code, StatusCode::NOT_FOUND);
+    let (code, _) = f.send("GET", &path, json!({}), "", Uuid::new_v4()).await;
+    assert_eq!(code, StatusCode::FORBIDDEN);
+    let wrong = format!(
+        "/v1/tenants/{}/projects/{}/revisions/{}",
+        f.tenant,
+        Uuid::new_v4(),
+        revisions[0]
+    );
+    let (code, _) = f.send("GET", &wrong, json!({}), "", f.actor).await;
+    assert_eq!(code, StatusCode::NOT_FOUND);
+    let helper:bool=sqlx::query_scalar("SELECT has_function_privilege('labyrinth_api','labyrinth.require_tenant_access(uuid,uuid)','EXECUTE')").fetch_one(&f.admin).await.unwrap();
+    assert!(!helper);
+}

@@ -1,4 +1,5 @@
 //! Authenticated, bounded job submission and authoritative status polling.
+mod discovery;
 mod error;
 mod routes;
 use crate::auth::{AuthError, JwksVerifier};
@@ -58,6 +59,15 @@ pub fn router_with_artifacts(
         timeout: limits.request_timeout,
     };
     let protected = Router::new()
+        .route("/v1/tenants/{tenant}/projects", get(discovery::projects))
+        .route(
+            "/v1/tenants/{tenant}/projects/{project}/revisions",
+            get(discovery::revisions),
+        )
+        .route(
+            "/v1/tenants/{tenant}/projects/{project}/revisions/{revision}",
+            get(discovery::revision),
+        )
         .route(
             "/v1/tenants/{tenant}/projects/{project}/jobs",
             post(routes::submit),

@@ -682,3 +682,9 @@ leased cleanup and repeat sweeps handle partial deletion, crashes and late stale
 uploads. The required worker setting is LABYRINTH_ORPHAN_SAFETY_SECS=86400.
 See [cleanup V1](docs/contracts/orphan-cleanup-v1.md). This settles orphan staging
 cleanup only; published revision, project, audit and backup retention remain open.
+
+Project and published revision discovery now expose bounded authenticated read
+interfaces, including safe artifact inventory metadata. Pagination uses immutable
+UUID cursors with a documented non-snapshot ordering contract. See
+[project discovery V1](docs/contracts/project-discovery-v1.md). This does not implement
+tenant provisioning, project mutations or administrator capabilities.

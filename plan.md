@@ -692,3 +692,16 @@ See [cleanup contract](docs/contracts/orphan-cleanup-v1.md) and
 [acceptance](docs/testing/orphan-cleanup.md). This supersedes the prior pending
 orphan-window decision. Published revision retention, project/data deletion,
 restore drills, detailed diagnostics and live deployment acceptance remain open.
+
+## Project/revision discovery checkpoint — 2026-11-16
+
+- [x] Bounded tenant project listing and project-scoped published revision listing.
+- [x] Published revision detail with artifact names/hashes/sizes; no object-key or
+  requirement-payload disclosure.
+- [x] Explicit UUID cursor semantics, current membership checks and restricted
+  database read functions with signed-request/PostgreSQL acceptance tests.
+
+See [contract](docs/contracts/project-discovery-v1.md) and
+[acceptance](docs/testing/project-discovery.md). Project/tenant creation and other
+management mutations, authentication onboarding, diagnostics, admin APIs and hosted
+deployment/restore acceptance remain separate unfinished backend work.
