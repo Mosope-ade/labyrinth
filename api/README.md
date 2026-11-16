@@ -106,3 +106,8 @@ history and retry scheduling. No raw worker errors or storage/runtime keys are r
 
 [AI-free workflow discovery](../docs/contracts/client-workflow-v1.md) lets clients
 select an admitted catalog hash, validate/clarify intent and recover project jobs.
+
+[Admin operations](../docs/contracts/admin-v1.md) use a private operator-managed
+registry. See [the runbook](../docs/runbooks/admin-operations.md) for migration preflight,
+role maintenance and separate audit retention credentials. Global admin is never a
+substitute for private tenant membership.

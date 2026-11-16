@@ -1,4 +1,5 @@
 //! Authenticated, bounded job submission and authoritative status polling.
+mod admin;
 mod diagnostics;
 mod discovery;
 mod error;
@@ -96,6 +97,29 @@ pub fn router_with_onboarding(
         timeout: limits.request_timeout,
     };
     let protected = Router::new()
+        .route(
+            "/v1/admin/tenants/{tenant}/projects/{project}/jobs/{job}",
+            get(admin::job),
+        )
+        .route(
+            "/v1/admin/tenants/{tenant}/projects/{project}/jobs/{job}/cancel",
+            post(admin::cancel_job),
+        )
+        .route("/v1/admin/overview", get(admin::overview))
+        .route("/v1/admin/users", get(admin::users))
+        .route("/v1/admin/tenants", get(admin::tenants))
+        .route("/v1/admin/audit", get(admin::audit))
+        .route("/v1/admin/catalogs/validate", post(admin::validate_catalog))
+        .route("/v1/admin/catalogs", post(admin::promote))
+        .route(
+            "/v1/admin/catalogs/{hash}/admission",
+            post(admin::catalog_state),
+        )
+        .route("/v1/admin/users/{id}/suspension", post(admin::user_suspend))
+        .route(
+            "/v1/admin/tenants/{id}/suspension",
+            post(admin::tenant_suspend),
+        )
         .route("/v1/tenants/{tenant}/catalogs", get(workflow::catalogs))
         .route(
             "/v1/tenants/{tenant}/catalogs/{hash}",

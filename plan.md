@@ -760,3 +760,20 @@ remain open. No raw diagnostics/exception-text artifact store has been introduce
 See [contract](docs/contracts/client-workflow-v1.md) and
 [acceptance](docs/testing/client-workflow.md). Admin mutation boundaries and deployment
 packaging/acceptance remain separate work; no catalog default is silently selected.
+
+## Admin governance checkpoint — 2026-11-16
+
+- [x] User-approved operator-managed admin registry with per-operation revocation/
+  suspension checks; no JWT metadata escalation or automatic private-content access.
+- [x] Operational overview, bounded user/tenant/audit metadata, confirmed suspension
+  and state-only job intervention/cancellation without rewriting terminal history.
+- [x] Strict draft validation, reviewed hash promotion, immutable semantic-version
+  mapping and admission compare-and-set with archived replay preservation.
+- [x] Atomic append-only audits, operator role-change attribution and a separate
+  maintenance-only 365-day minimum bounded retention tool.
+
+See [ADR 0008](docs/decisions/0008-admin-catalog-and-audit-governance.md),
+[contract](docs/contracts/admin-v1.md), [runbook](docs/runbooks/admin-operations.md)
+and [acceptance](docs/testing/admin-operations.md). AI-specific telemetry, full
+counterexample transport, actual hosted provisioning and deployment/restore/load
+acceptance remain unfinished. No admin GUI has been built.

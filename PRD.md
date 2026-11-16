@@ -719,3 +719,12 @@ AI-free clients can discover admitted catalog hashes, validate/clarify structure
 requirements using admission's shared pipeline, and list project jobs without private
 input disclosure. See [client workflow V1](docs/contracts/client-workflow-v1.md).
 Validation readiness is not engineering verification or a feasibility guarantee.
+
+Admin backend governance now follows the approved operator-only role registry,
+365-day audit minimum and immutable catalog-version/hash policy. Operational metadata
+and confirmed interventions do not grant private topology access; explicit job
+cancellation preserves terminal history. Draft validation/promotion and admission
+state changes are audited without raw YAML/intent data. AI cost telemetry remains
+unavailable until AI integration. See [admin V1](docs/contracts/admin-v1.md) and
+[ADR 0008](docs/decisions/0008-admin-catalog-and-audit-governance.md). Hosted provisioning,
+restore/load drills and the later admin GUI remain separate acceptance work.

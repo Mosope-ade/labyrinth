@@ -1250,3 +1250,438 @@ async fn clients_discover_admitted_catalogs_validate_without_ai_and_list_scoped_
         StatusCode::FORBIDDEN
     );
 }
+
+#[tokio::test]
+async fn admin_boundary_uses_operator_registry_and_does_not_grant_private_project_access() {
+    let f = Fixture::new(2).await;
+    let path = "/v1/admin/overview";
+    assert_eq!(
+        f.send("GET", path, json!({}), "", f.actor).await.0,
+        StatusCode::FORBIDDEN
+    );
+    let mut forged = claims(f.actor);
+    forged["app_metadata"] = json!({"role":"admin"});
+    forged["user_metadata"] = json!({"role":"admin"});
+    let request = Request::builder()
+        .uri(path)
+        .header(
+            "authorization",
+            format!("Bearer {}", f.source.signer.token(&forged)),
+        )
+        .body(Body::empty())
+        .unwrap();
+    assert_eq!(
+        f.app().oneshot(request).await.unwrap().status(),
+        StatusCode::FORBIDDEN
+    );
+    sqlx::query("INSERT INTO labyrinth.admin_roles(user_id) VALUES($1)")
+        .bind(f.actor)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    let (code, overview) = f.send("GET", path, json!({}), "", f.actor).await;
+    assert_eq!(code, StatusCode::OK);
+    assert!(overview.get("job_counts").is_some());
+    assert!(!overview.to_string().contains("requirements"));
+    let outsider = Uuid::new_v4();
+    sqlx::query("INSERT INTO labyrinth.users(id) VALUES($1)")
+        .bind(outsider)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO labyrinth.admin_roles(user_id) VALUES($1)")
+        .bind(outsider)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    assert_eq!(
+        f.send(
+            "GET",
+            &format!("/v1/tenants/{}/projects", f.tenant),
+            json!({}),
+            "",
+            outsider
+        )
+        .await
+        .0,
+        StatusCode::FORBIDDEN
+    );
+    sqlx::query("DELETE FROM labyrinth.admin_roles WHERE user_id=$1")
+        .bind(f.actor)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    assert_eq!(
+        f.send("GET", path, json!({}), "", f.actor).await.0,
+        StatusCode::FORBIDDEN
+    );
+}
+
+#[tokio::test]
+async fn admin_catalog_promotion_pins_versions_audits_actions_and_preserves_accepted_jobs() {
+    let f = Fixture::new(3).await;
+    sqlx::query("INSERT INTO labyrinth.admin_roles(user_id) VALUES($1)")
+        .bind(f.actor)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    let version = format!("9.0.0+{}", Uuid::new_v4().simple());
+    let yaml = YAML.replacen("version: 1.2.0", &format!("version: {version}"), 1);
+    let hash = labyrinth_engine::catalog::load_yaml(&yaml)
+        .unwrap()
+        .version()
+        .sha256
+        .clone();
+    let (code, validated) = f
+        .send(
+            "POST",
+            "/v1/admin/catalogs/validate",
+            json!({"yaml":yaml}),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(validated["catalog_version"]["sha256"], hash);
+    assert_eq!(
+        f.send(
+            "POST",
+            "/v1/admin/catalogs/validate",
+            json!({"yaml":"invalid: draft"}),
+            "",
+            f.actor
+        )
+        .await
+        .0,
+        StatusCode::UNPROCESSABLE_ENTITY
+    );
+    let body = json!({"yaml":yaml,"expected_sha256":hash,"confirm_sha256":hash});
+    let (code, promoted) = f
+        .send("POST", "/v1/admin/catalogs", body.clone(), "", f.actor)
+        .await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(promoted["replayed"], false);
+    let (code, replay) = f
+        .send("POST", "/v1/admin/catalogs", body, "", f.actor)
+        .await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(replay["replayed"], true);
+    let conflicting = yaml.replacen("relative_cost_tier: 1", "relative_cost_tier: 2", 1);
+    let other = labyrinth_engine::catalog::load_yaml(&conflicting)
+        .unwrap()
+        .version()
+        .sha256
+        .clone();
+    let (code, error) = f
+        .send(
+            "POST",
+            "/v1/admin/catalogs",
+            json!({"yaml":conflicting,"expected_sha256":other,"confirm_sha256":other}),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(code, StatusCode::CONFLICT);
+    assert_eq!(error["error"]["code"], "catalog_version_conflict");
+    let mut input = f.body();
+    input["catalog_sha256"] = json!(hash);
+    let (_, job) = f
+        .send("POST", &f.path(), input.clone(), "pinned", f.actor)
+        .await;
+    let path = format!("/v1/admin/catalogs/{hash}/admission");
+    let change = json!({"expected_admitted":true,"admitted":false,"confirm_sha256":hash});
+    assert_eq!(
+        f.send("POST", &path, change.clone(), "", f.actor).await.0,
+        StatusCode::OK
+    );
+    assert_eq!(
+        f.send("POST", &path, change, "", f.actor).await.0,
+        StatusCode::CONFLICT
+    );
+    let (code, replay) = f
+        .send("POST", &f.path(), input.clone(), "pinned", f.actor)
+        .await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(replay["job_id"], job["job_id"]);
+    assert_eq!(
+        f.send("POST", &f.path(), input, "new-after-disabled", f.actor)
+            .await
+            .0,
+        StatusCode::UNPROCESSABLE_ENTITY
+    );
+    let (code, retired_replay) = f
+        .send(
+            "POST",
+            "/v1/admin/catalogs",
+            json!({"yaml":yaml,"expected_sha256":hash,"confirm_sha256":hash}),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(retired_replay["admitted"], false);
+    let saved: String = sqlx::query_scalar("SELECT yaml FROM labyrinth.catalogs WHERE sha256=$1")
+        .bind(&hash)
+        .fetch_one(&f.admin)
+        .await
+        .unwrap();
+    assert_eq!(saved, yaml);
+    let (code, audit) = f
+        .send("GET", "/v1/admin/audit?limit=100", json!({}), "", f.actor)
+        .await;
+    assert_eq!(code, StatusCode::OK);
+    assert!(!audit.to_string().contains("port_groups"));
+    assert!(
+        audit["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|v| v["action"] == "catalog_promote" && v["outcome"] == "failed")
+    );
+}
+
+#[tokio::test]
+async fn admin_suspension_is_confirmed_compare_and_set_and_rejects_admin_targets() {
+    let f = Fixture::new(2).await;
+    sqlx::query("INSERT INTO labyrinth.admin_roles(user_id) VALUES($1)")
+        .bind(f.actor)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    let path = format!("/v1/admin/tenants/{}/suspension", f.tenant);
+    let body = json!({"expected_suspended":false,"suspended":true,"confirm_target":f.tenant});
+    let (code, _) = f.send("POST", &path, body.clone(), "", f.actor).await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(
+        f.send("POST", &path, body, "", f.actor).await.0,
+        StatusCode::CONFLICT
+    );
+    assert_eq!(
+        f.send(
+            "GET",
+            &format!("/v1/tenants/{}/projects", f.tenant),
+            json!({}),
+            "",
+            f.actor
+        )
+        .await
+        .0,
+        StatusCode::FORBIDDEN
+    );
+    let user_path = format!("/v1/admin/users/{}/suspension", f.actor);
+    assert_eq!(
+        f.send(
+            "POST",
+            &user_path,
+            json!({"expected_suspended":false,"suspended":true,"confirm_target":f.actor}),
+            "",
+            f.actor
+        )
+        .await
+        .0,
+        StatusCode::FORBIDDEN
+    );
+    let target = Uuid::new_v4();
+    sqlx::query("INSERT INTO labyrinth.users(id) VALUES($1)")
+        .bind(target)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    let user_path = format!("/v1/admin/users/{target}/suspension");
+    assert_eq!(
+        f.send(
+            "POST",
+            &user_path,
+            json!({"expected_suspended":false,"suspended":true,"confirm_target":Uuid::new_v4()}),
+            "",
+            f.actor
+        )
+        .await
+        .0,
+        StatusCode::BAD_REQUEST
+    );
+    assert_eq!(
+        f.send(
+            "POST",
+            &user_path,
+            json!({"expected_suspended":false,"suspended":true,"confirm_target":target}),
+            "",
+            f.actor
+        )
+        .await
+        .0,
+        StatusCode::OK
+    );
+    assert!(
+        sqlx::query("INSERT INTO labyrinth.admin_roles(user_id) VALUES($1)")
+            .bind(target)
+            .execute(&f.admin)
+            .await
+            .is_err()
+    );
+    let allowed: bool = sqlx::query_scalar(
+        "SELECT has_table_privilege('labyrinth_api','labyrinth.admin_roles','INSERT')",
+    )
+    .fetch_one(&f.admin)
+    .await
+    .unwrap();
+    assert!(!allowed);
+    let changed =
+        sqlx::query("UPDATE labyrinth.admin_audit_logs SET outcome='failed' WHERE actor_id=$1")
+            .bind(f.actor)
+            .execute(&f.admin)
+            .await;
+    assert!(changed.is_err());
+}
+
+#[tokio::test]
+async fn admin_audit_retention_is_maintenance_only_bounded_and_preserves_younger_records() {
+    let f = Fixture::new(2).await;
+    let old:i64=sqlx::query_scalar("INSERT INTO labyrinth.admin_audit_logs(actor_id,action,target_id,outcome,occurred_at) VALUES($1,'retention-test',$1,'allowed',clock_timestamp()-interval '366 days') RETURNING id").bind(f.actor).fetch_one(&f.admin).await.unwrap();
+    let young:i64=sqlx::query_scalar("INSERT INTO labyrinth.admin_audit_logs(actor_id,action,target_id,outcome,occurred_at) VALUES($1,'retention-test',$1,'allowed',clock_timestamp()-interval '364 days') RETURNING id").bind(f.actor).fetch_one(&f.admin).await.unwrap();
+    let denied:bool=sqlx::query_scalar("SELECT has_function_privilege('labyrinth_api','labyrinth.prune_admin_audit(integer)','EXECUTE')").fetch_one(&f.admin).await.unwrap();
+    assert!(!denied);
+    let url = std::env::var("LABYRINTH_TEST_DATABASE_URL").unwrap();
+    let maintenance = PgPoolOptions::new()
+        .max_connections(1)
+        .after_connect(|c, _| {
+            Box::pin(async move {
+                sqlx::query("SET ROLE labyrinth_maintenance")
+                    .execute(c)
+                    .await?;
+                Ok(())
+            })
+        })
+        .connect(&url)
+        .await
+        .unwrap();
+    assert!(
+        sqlx::query("SELECT * FROM labyrinth.admin_audit_logs")
+            .execute(&maintenance)
+            .await
+            .is_err()
+    );
+    let removed: i64 = sqlx::query_scalar("SELECT labyrinth.prune_admin_audit(1)")
+        .fetch_one(&maintenance)
+        .await
+        .unwrap();
+    assert_eq!(removed, 1);
+    let old_exists: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT FROM labyrinth.admin_audit_logs WHERE id=$1)")
+            .bind(old)
+            .fetch_one(&f.admin)
+            .await
+            .unwrap();
+    assert!(!old_exists);
+    let young_exists: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT FROM labyrinth.admin_audit_logs WHERE id=$1)")
+            .bind(young)
+            .fetch_one(&f.admin)
+            .await
+            .unwrap();
+    assert!(young_exists);
+    assert!(
+        sqlx::query("DELETE FROM labyrinth.admin_audit_logs WHERE id=$1")
+            .bind(young)
+            .execute(&f.admin)
+            .await
+            .is_err()
+    );
+    assert!(
+        sqlx::query("SELECT labyrinth.prune_admin_audit(1001)")
+            .execute(&maintenance)
+            .await
+            .is_err()
+    );
+    maintenance.close().await;
+}
+
+#[tokio::test]
+async fn admin_job_intervention_cancels_without_exposing_inputs_or_rewriting_success() {
+    let f = Fixture::new(3).await;
+    let operator = Uuid::new_v4();
+    sqlx::query("INSERT INTO labyrinth.users(id) VALUES($1)")
+        .bind(operator)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO labyrinth.admin_roles(user_id) VALUES($1)")
+        .bind(operator)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    let (_, job) = f
+        .send("POST", &f.path(), f.body(), "admin-cancel-job", f.actor)
+        .await;
+    let id = job["job_id"].as_str().unwrap();
+    let path = format!(
+        "/v1/admin/tenants/{}/projects/{}/jobs/{id}",
+        f.tenant, f.project
+    );
+    let (code, metadata) = f.send("GET", &path, json!({}), "", operator).await;
+    assert_eq!(code, StatusCode::OK);
+    assert!(!metadata.to_string().contains("requirements"));
+    assert_eq!(
+        f.send(
+            "GET",
+            &format!("{}/{id}", f.path()),
+            json!({}),
+            "",
+            operator
+        )
+        .await
+        .0,
+        StatusCode::FORBIDDEN
+    );
+    let cancel = format!("{path}/cancel");
+    let body = json!({"expected_state":"queued","confirm_job":id});
+    assert_eq!(
+        f.send("POST", &cancel, body.clone(), "", operator).await.0,
+        StatusCode::OK
+    );
+    assert_eq!(
+        f.send("POST", &cancel, body, "", operator).await.0,
+        StatusCode::CONFLICT
+    );
+    let (_, other) = f
+        .send("POST", &f.path(), f.body(), "admin-success-job", f.actor)
+        .await;
+    let id: Uuid = serde_json::from_value(other["job_id"].clone()).unwrap();
+    let revision = Uuid::new_v4();
+    sqlx::query("UPDATE labyrinth.jobs SET state='running' WHERE tenant_id=$1 AND id=$2")
+        .bind(f.tenant)
+        .bind(id)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO labyrinth.revisions(tenant_id,project_id,id,job_id,manifest_sha256,catalog_sha256) VALUES($1,$2,$3,$4,$5,$6)").bind(f.tenant).bind(f.project).bind(revision).bind(id).bind("a".repeat(64)).bind(&f.hash).execute(&f.admin).await.unwrap();
+    sqlx::query("UPDATE labyrinth.jobs SET state='succeeded' WHERE tenant_id=$1 AND id=$2")
+        .bind(f.tenant)
+        .bind(id)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    let path = format!(
+        "/v1/admin/tenants/{}/projects/{}/jobs/{id}/cancel",
+        f.tenant, f.project
+    );
+    let (code, unchanged) = f
+        .send(
+            "POST",
+            &path,
+            json!({"expected_state":"succeeded","confirm_job":id}),
+            "",
+            operator,
+        )
+        .await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(unchanged["state"], "succeeded");
+    let count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM labyrinth.revisions WHERE tenant_id=$1 AND id=$2")
+            .bind(f.tenant)
+            .bind(revision)
+            .fetch_one(&f.admin)
+            .await
+            .unwrap();
+    assert_eq!(count, 1);
+}
