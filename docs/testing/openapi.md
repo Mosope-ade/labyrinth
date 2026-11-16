@@ -1,6 +1,6 @@
 # Hosted API schema verification
 
-The generated contract covers 27 current paths / 29 operations. Its source lives in
+The generated contract covers 28 current paths / 30 operations. Its source lives in
 `api/src/openapi.rs`, `api/src/openapi/operations.rs` and
 `api/src/openapi/responses.rs`; engine schemas are imported with local references.
 

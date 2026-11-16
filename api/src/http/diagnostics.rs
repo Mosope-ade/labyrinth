@@ -79,3 +79,22 @@ pub(super) async fn attempts(
     }
     Ok(Json(json!({"job_id":job,"items":items})).into_response())
 }
+
+/// Counterexamples contain private network identifiers; admin metadata access is insufficient.
+pub(super) async fn evidence(
+    State(state): State<AppState>,
+    Extension(actor): Extension<AuthenticatedActor>,
+    path: Result<Path<(Uuid, Uuid, Uuid, Uuid)>, PathRejection>,
+) -> Result<Response, ApiError> {
+    let Path((tenant, project, job, attempt)) = path.map_err(|_| ApiError::invalid())?;
+    let value: Value = sqlx::query_scalar("SELECT labyrinth.attempt_evidence($1,$2,$3,$4,$5)")
+        .bind(actor.id())
+        .bind(tenant)
+        .bind(project)
+        .bind(job)
+        .bind(attempt)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(AdmissionError::from)?;
+    Ok(Json(value).into_response())
+}

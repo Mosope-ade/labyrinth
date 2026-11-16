@@ -767,3 +767,14 @@ confirmations/expected states and document registry-based role checks. Integrati
 verification validates real HTTP responses against operation/status schemas. This
 supersedes the initial request-only export limitation. Artifact file contents and
 extensible engine error details retain their separate engineering contracts.
+
+### Private failed-generation evidence
+
+Authorized project members can retrieve bounded structured engine failure evidence
+for an individual attempt. Resource exhaustion is inconclusive; rejection alone is
+not an infeasibility proof. Evidence commits only through the active worker fence,
+is immutable, and is suppressed when cancellation wins. Reports exceeding 16 KiB
+are omitted with an explicit truncation marker. Metadata-only admin access grants no
+right to this topology content. Legacy/infrastructure attempts may have null evidence.
+The endpoint and additive migration are documented in the diagnostics contract;
+attempt-history retention remains a separate unresolved policy.

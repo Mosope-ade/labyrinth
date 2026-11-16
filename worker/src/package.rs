@@ -61,7 +61,12 @@ pub fn generate(input: EngineInput) -> Result<Files> {
         }
         _ => return Err(Error::Invalid),
     }
-    .map_err(classify_generation_error)?;
+    .map_err(|error| {
+        let resource = matches!(classify_generation_error(&error), Error::ResourceLimit);
+        Error::Engine(Box::new(crate::evidence::Evidence::from_engine(
+            &error, resource,
+        )))
+    })?;
     Ok(p.files().clone())
 }
 pub fn validate(files: &Files, c: &Context, limit: usize) -> Result<Vec<Object>> {
@@ -147,7 +152,7 @@ fn resource_counterexample(c: &labyrinth_engine::diagnostics::Counterexample) ->
             | "service_class_budget"
     )
 }
-fn classify_generation_error(error: artifacts::GenerationError) -> Error {
+fn classify_generation_error(error: &artifacts::GenerationError) -> Error {
     use artifacts::GenerationError;
     use labyrinth_engine::{
         routing::RoutingError, selection::SelectionError, topology::PlanningError,
@@ -158,7 +163,7 @@ fn classify_generation_error(error: artifacts::GenerationError) -> Error {
         ))
         | GenerationError::Routing(RoutingError::Timeout | RoutingError::SearchExhausted { .. })
         | GenerationError::PackageLimit { .. } => Error::ResourceLimit,
-        GenerationError::RepairExhausted { last, .. } => classify_generation_error(*last),
+        GenerationError::RepairExhausted { last, .. } => classify_generation_error(last),
         GenerationError::VerificationFailed(report)
             if report
                 .passes

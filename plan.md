@@ -799,7 +799,7 @@ must be confirmed separately. Local native smoke is not a container deployment c
 - [x] OpenAPI 3.1 request subset for onboarding, project creation and job admission,
   with engine-derived intent/options schemas, strict authority boundaries and
   export-freshness/reference validation tests.
-- [ ] Typed success responses and discovery/admin/download OpenAPI coverage before
+- [x] Typed success responses and discovery/admin/download OpenAPI coverage before
   treating the export as a complete SDK contract.
 
 See [scope and regeneration](docs/contracts/openapi-admission-v1.md).
@@ -832,3 +832,17 @@ proposal is superseded. See deploy/README.md for provider limits and quota handl
 This supersedes the admission-only export checkpoint. Artifact file payload types and
 engine error-detail variants remain governed by their separate contracts; OpenAPI
 models the JSON download boundary and extensible error envelope explicitly.
+
+## Structured failure evidence checkpoint — 2026-11-16
+
+- [x] Bounded engine GenerationError/counterexamples survive supervised child execution
+  and atomic fenced worker finalization without logging raw error text.
+- [x] Project-scoped attempt evidence endpoint, immutable persistence, explicit
+  truncation, resource-inconclusive semantics and no admin-only content access.
+- [x] SQL size/fence/expiry/replay/role/cancellation checks, real worker execution and
+  OpenAPI response-contract verification; published artifacts remain untouched.
+
+See [diagnostics contract](docs/contracts/job-diagnostics-v1.md). Overall history
+retention/deletion, hosted provider acceptance, load/restore drills and optional AI
+telemetry remain open. This completes the previously deferred bounded counterexample
+transport, not unrestricted storage of arbitrarily large solver reports.

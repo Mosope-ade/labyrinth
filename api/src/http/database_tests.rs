@@ -1724,3 +1724,198 @@ async fn readiness_checks_database_and_signing_keys_without_exposing_details() {
         StatusCode::SERVICE_UNAVAILABLE
     );
 }
+
+#[tokio::test]
+async fn engine_evidence_is_fenced_immutable_bounded_and_project_private() {
+    let f = Fixture::new(2).await;
+    let (_, admitted) = f
+        .send("POST", &f.path(), f.body(), "engine-evidence", f.actor)
+        .await;
+    let job: Uuid = serde_json::from_value(admitted["job_id"].clone()).unwrap();
+    let attempt = Uuid::new_v4();
+    let fence = Uuid::new_v4();
+    sqlx::query("UPDATE labyrinth.jobs SET state='running' WHERE tenant_id=$1 AND id=$2")
+        .bind(f.tenant)
+        .bind(job)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO labyrinth.attempts(tenant_id,project_id,job_id,id,attempt_number,fence,worker_id,lease_expires_at,heartbeat_at,staged_prefix) VALUES($1,$2,$3,$4,1,$5,'evidence-worker',clock_timestamp()+interval '60 seconds',clock_timestamp(),$6)").bind(f.tenant).bind(f.project).bind(job).bind(attempt).bind(fence).bind(format!("attempts/{}/{job}/{attempt}/",f.tenant)).execute(&f.admin).await.unwrap();
+    let path = format!("{}/{job}/attempts/{attempt}/evidence", f.path());
+    let (status, running) = f.send("GET", &path, json!({}), "", f.actor).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(running["evidence"].is_null());
+    let evidence = json!({"schema_version":"engine_failure_v1","outcome":"inconclusive","truncated":false,"error":{"code":"routing","detail":{"code":"timeout"}}});
+    let worker = PgPoolOptions::new()
+        .after_connect(|c, _| {
+            Box::pin(async move {
+                sqlx::query("SET ROLE labyrinth_worker").execute(c).await?;
+                Ok(())
+            })
+        })
+        .connect(&std::env::var("LABYRINTH_TEST_DATABASE_URL").unwrap())
+        .await
+        .unwrap();
+    let finish = |token, report: Value| {
+        sqlx::query_scalar::<_, bool>(
+            "SELECT labyrinth.finish_attempt_evidence($1,$2,$3,'resource_limit',3,10,60,$4)",
+        )
+        .bind(f.tenant)
+        .bind(job)
+        .bind(token)
+        .bind(report)
+    };
+    assert!(
+        !finish(Uuid::new_v4(), evidence.clone())
+            .fetch_one(&worker)
+            .await
+            .unwrap()
+    );
+    let mut oversized = evidence.clone();
+    oversized["error"] = json!({"code":"revision_conflict","detail":"x".repeat(65536)});
+    assert!(finish(fence, oversized).fetch_one(&worker).await.is_err());
+    let state: String =
+        sqlx::query_scalar("SELECT state FROM labyrinth.jobs WHERE tenant_id=$1 AND id=$2")
+            .bind(f.tenant)
+            .bind(job)
+            .fetch_one(&f.admin)
+            .await
+            .unwrap();
+    assert_eq!(state, "running");
+    sqlx::query("UPDATE labyrinth.attempts SET lease_expires_at=clock_timestamp()-interval '1 second' WHERE fence=$1").bind(fence).execute(&f.admin).await.unwrap();
+    assert!(
+        !finish(fence, evidence.clone())
+            .fetch_one(&worker)
+            .await
+            .unwrap()
+    );
+    sqlx::query("UPDATE labyrinth.attempts SET lease_expires_at=clock_timestamp()+interval '60 seconds' WHERE fence=$1").bind(fence).execute(&f.admin).await.unwrap();
+    assert!(
+        finish(fence, evidence.clone())
+            .fetch_one(&worker)
+            .await
+            .unwrap()
+    );
+    assert!(
+        !finish(fence, evidence.clone())
+            .fetch_one(&worker)
+            .await
+            .unwrap()
+    );
+    let (status, saved) = f.send("GET", &path, json!({}), "", f.actor).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(saved["evidence"], evidence);
+    assert!(
+        sqlx::query("UPDATE labyrinth.attempts SET engine_evidence=NULL WHERE fence=$1")
+            .bind(fence)
+            .execute(&f.admin)
+            .await
+            .is_err()
+    );
+    assert!(
+        sqlx::query("SELECT labyrinth.attempt_evidence($1,$2,$3,$4,$5)")
+            .bind(f.actor)
+            .bind(f.tenant)
+            .bind(f.project)
+            .bind(job)
+            .bind(attempt)
+            .execute(&worker)
+            .await
+            .is_err()
+    );
+    assert!(
+        sqlx::query(
+            "SELECT labyrinth.finish_attempt_evidence($1,$2,$3,'resource_limit',3,10,60,NULL)"
+        )
+        .bind(f.tenant)
+        .bind(job)
+        .bind(fence)
+        .execute(&f.pool)
+        .await
+        .is_err()
+    );
+    // Cancellation wins terminal ownership and suppresses an in-flight engine report.
+    let (_, admitted) = f
+        .send("POST", &f.path(), f.body(), "cancel-evidence", f.actor)
+        .await;
+    let cancelled: Uuid = serde_json::from_value(admitted["job_id"].clone()).unwrap();
+    let cancelled_attempt = Uuid::new_v4();
+    let cancelled_fence = Uuid::new_v4();
+    sqlx::query("UPDATE labyrinth.jobs SET state='running' WHERE tenant_id=$1 AND id=$2")
+        .bind(f.tenant)
+        .bind(cancelled)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO labyrinth.attempts(tenant_id,project_id,job_id,id,attempt_number,fence,worker_id,lease_expires_at,heartbeat_at,staged_prefix) VALUES($1,$2,$3,$4,1,$5,'cancel-evidence',clock_timestamp()+interval '60 seconds',clock_timestamp(),$6)").bind(f.tenant).bind(f.project).bind(cancelled).bind(cancelled_attempt).bind(cancelled_fence).bind(format!("attempts/{}/{cancelled}/{cancelled_attempt}/",f.tenant)).execute(&f.admin).await.unwrap();
+    assert_eq!(
+        f.send(
+            "POST",
+            &format!("{}/{cancelled}/cancel", f.path()),
+            json!({}),
+            "",
+            f.actor
+        )
+        .await
+        .0,
+        StatusCode::OK
+    );
+    let done: bool = sqlx::query_scalar(
+        "SELECT labyrinth.finish_attempt_evidence($1,$2,$3,'resource_limit',3,10,60,$4)",
+    )
+    .bind(f.tenant)
+    .bind(cancelled)
+    .bind(cancelled_fence)
+    .bind(evidence.clone())
+    .fetch_one(&worker)
+    .await
+    .unwrap();
+    assert!(done);
+    let cancelled_path = format!(
+        "{}/{cancelled}/attempts/{cancelled_attempt}/evidence",
+        f.path()
+    );
+    let (_, report) = f.send("GET", &cancelled_path, json!({}), "", f.actor).await;
+    assert!(report["evidence"].is_null());
+    let outsider = Uuid::new_v4();
+    sqlx::query("INSERT INTO labyrinth.users(id) VALUES($1)")
+        .bind(outsider)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO labyrinth.admin_roles(user_id) VALUES($1)")
+        .bind(outsider)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    assert_eq!(
+        f.send("GET", &path, json!({}), "", outsider).await.0,
+        StatusCode::FORBIDDEN
+    );
+    let missing = format!("{}/{job}/attempts/{}/evidence", f.path(), Uuid::new_v4());
+    assert_eq!(
+        f.send("GET", &missing, json!({}), "", f.actor).await.0,
+        StatusCode::NOT_FOUND
+    );
+    sqlx::query("UPDATE labyrinth.memberships SET role='viewer' WHERE tenant_id=$1 AND user_id=$2")
+        .bind(f.tenant)
+        .bind(f.actor)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    assert_eq!(
+        f.send("GET", &path, json!({}), "", f.actor).await.0,
+        StatusCode::OK
+    );
+    sqlx::query("DELETE FROM labyrinth.memberships WHERE tenant_id=$1 AND user_id=$2")
+        .bind(f.tenant)
+        .bind(f.actor)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    assert_eq!(
+        f.send("GET", &path, json!({}), "", f.actor).await.0,
+        StatusCode::FORBIDDEN
+    );
+    worker.close().await;
+}

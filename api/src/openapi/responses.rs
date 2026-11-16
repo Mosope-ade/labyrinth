@@ -26,6 +26,18 @@ pub(super) fn extend(document: &mut Value) {
     let count = json!({"type":"integer","minimum":0});
     let date = json!({"type":"string","format":"date-time"});
     let hash = json!({"type":"string","pattern":"^[0-9a-f]{64}$"});
+    s["GenerationError"] = imported(
+        serde_json::to_value(schemars::schema_for!(
+            labyrinth_engine::artifacts::GenerationError
+        ))
+        .expect("generation error schema"),
+        "GenerationError",
+    );
+    s["EngineEvidence"] = record(
+        json!({"schema_version":{"const":"engine_failure_v1"},"outcome":{"type":"string","enum":["rejected","inconclusive"]},"truncated":boolean,"error":nullable(reference("GenerationError"))}),
+    );
+    s["AttemptEvidence"] =
+        record(json!({"attempt_id":uuid,"evidence":nullable(reference("EngineEvidence"))}));
     s["JobState"] = json!({"type":"string","enum":["queued","running","retry_wait","cancel_requested","cancelled","failed","succeeded"]});
     s["Identity"] = record(
         json!({"user_id":uuid,"provisioned":boolean,"personal_tenant_id":nullable(uuid.clone())}),

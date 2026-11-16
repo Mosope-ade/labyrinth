@@ -213,7 +213,7 @@ async fn cooperative_search_exhaustion_remains_inconclusive_across_child_boundar
     request.context.options["selection_search_states"] = serde_json::json!(1);
     assert!(matches!(
         package::generate(serde_json::from_slice(&serde_json::to_vec(&request).unwrap()).unwrap()),
-        Err(Error::ResourceLimit)
+        Err(Error::Engine(ref report)) if report.outcome == labyrinth_worker::evidence::Outcome::Inconclusive
     ));
     assert!(matches!(
         process::run(
@@ -223,6 +223,29 @@ async fn cooperative_search_exhaustion_remains_inconclusive_across_child_boundar
             &limits()
         )
         .await,
-        Err(Error::ResourceLimit)
+        Err(Error::Engine(ref report)) if report.outcome == labyrinth_worker::evidence::Outcome::Inconclusive
     ));
+}
+
+#[tokio::test]
+async fn engine_failure_evidence_crosses_supervised_boundary_without_exception_text() {
+    let mut request = input();
+    request.context.options["selection_search_states"] = serde_json::json!(1);
+    let error = process::run(
+        Path::new(env!("CARGO_BIN_EXE_labyrinth-worker")),
+        Path::new("/usr/bin/prlimit"),
+        serde_json::to_vec(&request).unwrap(),
+        &limits(),
+    )
+    .await
+    .unwrap_err();
+    let Error::Engine(evidence) = error else {
+        panic!("structured evidence required")
+    };
+    assert_eq!(
+        evidence.outcome,
+        labyrinth_worker::evidence::Outcome::Inconclusive
+    );
+    assert!(evidence.error.is_some());
+    assert!(!format!("{}", Error::Engine(evidence)).contains("planning"));
 }

@@ -1,4 +1,5 @@
 //! Fenced hosted execution; pure network compilation remains in labyrinth-engine.
+pub mod evidence;
 pub mod package;
 pub mod process;
 pub mod runtime;
@@ -14,6 +15,8 @@ pub enum Error {
     LeaseLost,
     #[error("engine rejected requirements")]
     Deterministic,
+    #[error("engine returned structured failure evidence")]
+    Engine(Box<evidence::Evidence>),
     #[error("engine resource limit reached")]
     ResourceLimit,
     #[error("storage operation failed")]

@@ -181,7 +181,19 @@ pub async fn once_with_store(
     };
     if let Err(error) = result {
         if !matches!(error, Error::LeaseLost) {
-            let code = match error {
+            let evidence = if let Error::Engine(report) = &error {
+                Some(serde_json::to_value(report).map_err(|_| Error::Invalid)?)
+            } else {
+                None
+            };
+            let code = match &error {
+                Error::Engine(report) => {
+                    if report.outcome == crate::evidence::Outcome::Inconclusive {
+                        "resource_limit"
+                    } else {
+                        "engine_rejected"
+                    }
+                }
                 Error::Invalid => "invalid_input",
                 Error::Deterministic => "engine_rejected",
                 Error::ResourceLimit => "resource_limit",
@@ -190,17 +202,19 @@ pub async fn once_with_store(
                 Error::Io(_) => "process_io",
                 Error::LeaseLost => unreachable!(),
             };
-            let _: bool =
-                sqlx::query_scalar("SELECT labyrinth.finish_attempt_report($1,$2,$3,$4,$5,$6,$7)")
-                    .bind(h.tenant_id)
-                    .bind(h.job_id)
-                    .bind(h.fence)
-                    .bind(code)
-                    .bind(l.attempts)
-                    .bind(l.retry_first_secs)
-                    .bind(l.retry_second_secs)
-                    .fetch_one(db)
-                    .await?;
+            let _: bool = sqlx::query_scalar(
+                "SELECT labyrinth.finish_attempt_evidence($1,$2,$3,$4,$5,$6,$7,$8)",
+            )
+            .bind(h.tenant_id)
+            .bind(h.job_id)
+            .bind(h.fence)
+            .bind(code)
+            .bind(l.attempts)
+            .bind(l.retry_first_secs)
+            .bind(l.retry_second_secs)
+            .bind(evidence)
+            .fetch_one(db)
+            .await?;
         }
         // Classification only: never log inputs, credentials, object keys or SQL details.
         eprintln!(
@@ -209,6 +223,7 @@ pub async fn once_with_store(
                 Error::LeaseLost => "lease_lost",
                 Error::Storage => "storage",
                 Error::ResourceLimit => "resource_limit",
+                Error::Engine(_) => "engine_report",
                 Error::Deterministic | Error::Invalid => "deterministic",
                 _ => "infrastructure",
             }

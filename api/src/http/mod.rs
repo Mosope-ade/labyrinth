@@ -99,6 +99,10 @@ pub fn router_with_onboarding(
     };
     let protected = Router::new()
         .route(
+            "/v1/tenants/{tenant}/projects/{project}/jobs/{job}/attempts/{attempt}/evidence",
+            get(diagnostics::evidence),
+        )
+        .route(
             "/v1/admin/tenants/{tenant}/projects/{project}/jobs/{job}",
             get(admin::job),
         )

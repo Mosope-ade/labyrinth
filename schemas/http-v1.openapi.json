@@ -353,6 +353,30 @@
         ],
         "type": "object"
       },
+      "AttemptEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "attempt_id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EngineEvidence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "attempt_id",
+          "evidence"
+        ],
+        "type": "object"
+      },
       "Attempts": {
         "additionalProperties": false,
         "properties": {
@@ -1040,6 +1064,41 @@
         ],
         "type": "object"
       },
+      "EngineEvidence": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GenerationError"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "outcome": {
+            "enum": [
+              "rejected",
+              "inconclusive"
+            ],
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "engine_failure_v1"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "error",
+          "outcome",
+          "schema_version",
+          "truncated"
+        ],
+        "type": "object"
+      },
       "Error": {
         "additionalProperties": false,
         "properties": {
@@ -1065,6 +1124,1225 @@
           "error"
         ],
         "type": "object"
+      },
+      "GenerationError": {
+        "$defs": {
+          "AddressError": {
+            "oneOf": [
+              {
+                "properties": {
+                  "code": {
+                    "const": "invalid_request",
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code",
+                  "reason"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "allocation": {
+                    "$ref": "#/components/schemas/GenerationError/$defs/AllocationId"
+                  },
+                  "code": {
+                    "const": "pin_conflict",
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code",
+                  "allocation",
+                  "reason"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "allocation": {
+                    "$ref": "#/components/schemas/GenerationError/$defs/AllocationId"
+                  },
+                  "code": {
+                    "const": "exhausted",
+                    "type": "string"
+                  },
+                  "pool": {
+                    "$ref": "#/components/schemas/GenerationError/$defs/Ipv4Prefix"
+                  },
+                  "prefix_len": {
+                    "format": "uint8",
+                    "maximum": 255,
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "code",
+                  "allocation",
+                  "prefix_len",
+                  "pool"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "vlan_exhausted",
+                    "type": "string"
+                  },
+                  "site": {
+                    "$ref": "#/components/schemas/GenerationError/$defs/SiteId"
+                  }
+                },
+                "required": [
+                  "code",
+                  "site"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "AllocationId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "ArchetypeId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "Bottleneck": {
+            "properties": {
+              "device": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/GenerationError/$defs/DeviceId"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "pass": {
+                "format": "uint8",
+                "maximum": 255,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "rejections": {
+                "items": {
+                  "$ref": "#/components/schemas/GenerationError/$defs/CandidateRejection"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "pass",
+              "message",
+              "rejections"
+            ],
+            "type": "object"
+          },
+          "CandidateRejection": {
+            "properties": {
+              "archetype": {
+                "$ref": "#/components/schemas/GenerationError/$defs/ArchetypeId"
+              },
+              "mode": {
+                "$ref": "#/components/schemas/GenerationError/$defs/ModeId"
+              },
+              "reasons": {
+                "items": {
+                  "$ref": "#/components/schemas/GenerationError/$defs/RejectReason"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "archetype",
+              "mode",
+              "reasons"
+            ],
+            "type": "object"
+          },
+          "Counterexample": {
+            "additionalProperties": false,
+            "properties": {
+              "available": {
+                "format": "uint64",
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "code": {
+                "type": "string"
+              },
+              "component": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              },
+              "required": {
+                "format": "uint64",
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "code",
+              "component",
+              "detail"
+            ],
+            "type": "object"
+          },
+          "DeviceId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "DeviceRequirement": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/GenerationError/$defs/DeviceId"
+              },
+              "peak_mbps": {
+                "format": "uint64",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "pinned_archetype": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/GenerationError/$defs/ArchetypeId"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "pinned_mode": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/GenerationError/$defs/ModeId"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "poe_watts": {
+                "format": "uint64",
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "ports": {
+                "items": {
+                  "$ref": "#/components/schemas/GenerationError/$defs/PortDemand"
+                },
+                "type": "array"
+              },
+              "required_features": {
+                "items": {
+                  "$ref": "#/components/schemas/GenerationError/$defs/Feature"
+                },
+                "type": "array"
+              },
+              "role": {
+                "$ref": "#/components/schemas/GenerationError/$defs/DeviceRole"
+              }
+            },
+            "required": [
+              "id",
+              "role",
+              "required_features",
+              "peak_mbps",
+              "ports"
+            ],
+            "type": "object"
+          },
+          "DeviceRole": {
+            "enum": [
+              "router",
+              "core_switch",
+              "distribution_switch",
+              "access_switch",
+              "firewall",
+              "wan_edge",
+              "host",
+              "access_point",
+              "external_network"
+            ],
+            "type": "string"
+          },
+          "Feature": {
+            "enum": [
+              "routing",
+              "switching",
+              "vlan",
+              "ospf",
+              "bgp",
+              "static_routing",
+              "firewall",
+              "ips",
+              "vpn",
+              "nat",
+              "lacp",
+              "ecmp",
+              "poe",
+              "high_availability",
+              "rapid_spanning_tree",
+              "session_steering"
+            ],
+            "type": "string"
+          },
+          "FlowId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "Ipv4Prefix": {
+            "description": "Canonical IPv4 network CIDR; host bits are rejected, never silently discarded.",
+            "type": "string"
+          },
+          "Issue": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "$ref": "#/components/schemas/GenerationError/$defs/IssueCode"
+              },
+              "message": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "path",
+              "message"
+            ],
+            "type": "object"
+          },
+          "IssueCode": {
+            "enum": [
+              "invalid_value",
+              "duplicate_id",
+              "unknown_reference",
+              "conflict",
+              "limit_exceeded",
+              "unsupported_version"
+            ],
+            "type": "string"
+          },
+          "Media": {
+            "enum": [
+              "copper",
+              "fiber",
+              "virtual"
+            ],
+            "type": "string"
+          },
+          "ModeId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "PassEvidence": {
+            "additionalProperties": false,
+            "properties": {
+              "checked": {
+                "format": "uint64",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "counterexamples": {
+                "items": {
+                  "$ref": "#/components/schemas/GenerationError/$defs/Counterexample"
+                },
+                "type": "array"
+              },
+              "kind": {
+                "$ref": "#/components/schemas/GenerationError/$defs/PassKind"
+              },
+              "passed": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "passed",
+              "checked",
+              "counterexamples"
+            ],
+            "type": "object"
+          },
+          "PassKind": {
+            "enum": [
+              "structural",
+              "addressing",
+              "routing",
+              "security",
+              "resilience"
+            ],
+            "type": "string"
+          },
+          "PlanningError": {
+            "oneOf": [
+              {
+                "properties": {
+                  "code": {
+                    "const": "selection",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "$ref": "#/components/schemas/GenerationError/$defs/SelectionError"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "addressing",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "$ref": "#/components/schemas/GenerationError/$defs/AddressError"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "invalid_policy",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "canonical",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "$ref": "#/components/schemas/GenerationError/$defs/ValidationErrors"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "PolicyError": {
+            "oneOf": [
+              {
+                "properties": {
+                  "code": {
+                    "const": "invalid_service",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "no_permitted_service",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "$ref": "#/components/schemas/GenerationError/$defs/FlowId"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "PortDemand": {
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "format": "uint16",
+                "maximum": 65535,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "id": {
+                "$ref": "#/components/schemas/GenerationError/$defs/PortGroupId"
+              },
+              "media": {
+                "$ref": "#/components/schemas/GenerationError/$defs/Media"
+              },
+              "min_poe_watts": {
+                "format": "uint16",
+                "maximum": 65535,
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "speed_mbps": {
+                "format": "uint64",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "count",
+              "speed_mbps",
+              "media"
+            ],
+            "type": "object"
+          },
+          "PortGroupId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "RejectReason": {
+            "enum": [
+              "role",
+              "mode_features",
+              "unknown_throughput",
+              "throughput",
+              "port_compatibility",
+              "poe_budget",
+              "pin_conflict"
+            ],
+            "type": "string"
+          },
+          "RoutingError": {
+            "oneOf": [
+              {
+                "properties": {
+                  "code": {
+                    "const": "planning",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "$ref": "#/components/schemas/GenerationError/$defs/PlanningError"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "policy",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "$ref": "#/components/schemas/GenerationError/$defs/PolicyError"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "unknown_failure",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "search_exhausted",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "properties": {
+                      "detail": {
+                        "type": "string"
+                      },
+                      "states": {
+                        "format": "uint64",
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "states",
+                      "detail"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "timeout",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "invalid_limits",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "unsatisfied_traffic",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "properties": {
+                      "bottlenecks": {
+                        "items": {
+                          "$ref": "#/components/schemas/GenerationError/$defs/Counterexample"
+                        },
+                        "type": "array"
+                      },
+                      "flow": {
+                        "$ref": "#/components/schemas/GenerationError/$defs/FlowId"
+                      }
+                    },
+                    "required": [
+                      "flow",
+                      "bottlenecks"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "unreachable",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "properties": {
+                      "from": {
+                        "$ref": "#/components/schemas/GenerationError/$defs/ZoneId"
+                      },
+                      "to": {
+                        "$ref": "#/components/schemas/GenerationError/$defs/ZoneId"
+                      }
+                    },
+                    "required": [
+                      "from",
+                      "to"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "invalid_route",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "ScenarioEvidence": {
+            "additionalProperties": false,
+            "properties": {
+              "counterexamples": {
+                "items": {
+                  "$ref": "#/components/schemas/GenerationError/$defs/Counterexample"
+                },
+                "type": "array"
+              },
+              "excluded_demands": {
+                "format": "uint",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "name": {
+                "type": "string"
+              },
+              "passed": {
+                "type": "boolean"
+              },
+              "protected_demands": {
+                "format": "uint",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "name",
+              "passed",
+              "protected_demands",
+              "excluded_demands",
+              "counterexamples"
+            ],
+            "type": "object"
+          },
+          "SelectionError": {
+            "oneOf": [
+              {
+                "properties": {
+                  "code": {
+                    "const": "invalid_requirement",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "arithmetic_overflow",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "timeout",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "unsupported_blueprint",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "clarification_required",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "pin_conflict",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "infeasible",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "no_candidate",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "properties": {
+                      "device": {
+                        "$ref": "#/components/schemas/GenerationError/$defs/DeviceId"
+                      },
+                      "rejections": {
+                        "items": {
+                          "$ref": "#/components/schemas/GenerationError/$defs/CandidateRejection"
+                        },
+                        "type": "array"
+                      },
+                      "required": {
+                        "$ref": "#/components/schemas/GenerationError/$defs/DeviceRequirement"
+                      }
+                    },
+                    "required": [
+                      "device",
+                      "required",
+                      "rejections"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "search_exhausted",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "properties": {
+                      "limit": {
+                        "format": "uint64",
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "visited": {
+                        "format": "uint64",
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "visited",
+                      "limit"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "code": {
+                    "const": "repair_exhausted",
+                    "type": "string"
+                  },
+                  "detail": {
+                    "properties": {
+                      "bottlenecks": {
+                        "items": {
+                          "$ref": "#/components/schemas/GenerationError/$defs/Bottleneck"
+                        },
+                        "type": "array"
+                      },
+                      "passes": {
+                        "format": "uint8",
+                        "maximum": 255,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "passes",
+                      "bottlenecks"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "code",
+                  "detail"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "SiteId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "ValidationErrors": {
+            "additionalProperties": false,
+            "properties": {
+              "issues": {
+                "items": {
+                  "$ref": "#/components/schemas/GenerationError/$defs/Issue"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "issues"
+            ],
+            "type": "object"
+          },
+          "VerificationReport": {
+            "additionalProperties": false,
+            "properties": {
+              "assumptions": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "exclusions": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "passes": {
+                "items": {
+                  "$ref": "#/components/schemas/GenerationError/$defs/PassEvidence"
+                },
+                "type": "array"
+              },
+              "protected_set": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "rules_version": {
+                "type": "string"
+              },
+              "scenarios": {
+                "items": {
+                  "$ref": "#/components/schemas/GenerationError/$defs/ScenarioEvidence"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "rules_version",
+              "passes",
+              "scenarios",
+              "protected_set",
+              "exclusions",
+              "assumptions"
+            ],
+            "type": "object"
+          },
+          "ZoneId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          }
+        },
+        "oneOf": [
+          {
+            "properties": {
+              "code": {
+                "const": "planning",
+                "type": "string"
+              },
+              "detail": {
+                "$ref": "#/components/schemas/GenerationError/$defs/PlanningError"
+              }
+            },
+            "required": [
+              "code",
+              "detail"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "code": {
+                "const": "routing",
+                "type": "string"
+              },
+              "detail": {
+                "$ref": "#/components/schemas/GenerationError/$defs/RoutingError"
+              }
+            },
+            "required": [
+              "code",
+              "detail"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "code": {
+                "const": "verification_failed",
+                "type": "string"
+              },
+              "detail": {
+                "$ref": "#/components/schemas/GenerationError/$defs/VerificationReport"
+              }
+            },
+            "required": [
+              "code",
+              "detail"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "code": {
+                "const": "serialization",
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "detail"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "code": {
+                "const": "configuration",
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "detail"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "code": {
+                "const": "package_limit",
+                "type": "string"
+              },
+              "detail": {
+                "properties": {
+                  "bytes": {
+                    "format": "uint64",
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "file": {
+                    "type": "string"
+                  },
+                  "limit": {
+                    "format": "uint64",
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "file",
+                  "bytes",
+                  "limit"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "code",
+              "detail"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "code": {
+                "const": "revision_conflict",
+                "type": "string"
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "detail"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "code": {
+                "const": "capacity_rejected",
+                "type": "string"
+              },
+              "detail": {
+                "items": {
+                  "$ref": "#/components/schemas/GenerationError/$defs/Counterexample"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "code",
+              "detail"
+            ],
+            "type": "object"
+          },
+          {
+            "properties": {
+              "code": {
+                "const": "repair_exhausted",
+                "type": "string"
+              },
+              "detail": {
+                "properties": {
+                  "bottlenecks": {
+                    "items": {
+                      "$ref": "#/components/schemas/GenerationError/$defs/Bottleneck"
+                    },
+                    "type": "array"
+                  },
+                  "last": {
+                    "$ref": "#/components/schemas/GenerationError"
+                  },
+                  "passes": {
+                    "format": "uint8",
+                    "maximum": 255,
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "passes",
+                  "bottlenecks",
+                  "last"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "code",
+              "detail"
+            ],
+            "type": "object"
+          }
+        ],
+        "title": "GenerationError"
       },
       "GenerationOptions": {
         "$defs": {
@@ -4192,6 +5470,71 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Attempts"
+                }
+              }
+            },
+            "description": "Successful response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; status semantics and engine detail payloads are documented in docs/contracts"
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenant}/projects/{project}/jobs/{job}/attempts/{attempt}/evidence": {
+      "get": {
+        "operationId": "getAttemptEvidence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "job",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attempt",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttemptEvidence"
                 }
               }
             },

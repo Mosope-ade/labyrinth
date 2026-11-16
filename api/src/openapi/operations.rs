@@ -4,8 +4,18 @@ fn response(schema: &str) -> Value {
     json!({"description":"Successful response","content":{"application/json":{"schema":reference(schema)}}})
 }
 pub(super) fn extend(doc: &mut Value) {
+    let evidence_path =
+        "/v1/tenants/{tenant}/projects/{project}/jobs/{job}/attempts/{attempt}/evidence";
     // Request, response and pagination bindings are explicit; authority is checked server-side.
     for (path, method, id, request, result, page) in [
+        (
+            evidence_path,
+            "get",
+            "getAttemptEvidence",
+            "",
+            "AttemptEvidence",
+            "",
+        ),
         ("/v1/me", "get", "inspectIdentity", "", "Identity", ""),
         (
             "/v1/onboarding/personal-workspace",

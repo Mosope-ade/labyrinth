@@ -52,6 +52,12 @@ pub async fn run(
             return Err(Error::ResourceLimit);
         }
         let status = child.wait().await?;
+        if matches!(status.code(), Some(2 | 3))
+            && let Some(evidence) =
+                crate::evidence::Evidence::decode(&out, status.code() == Some(3))
+        {
+            return Err(Error::Engine(Box::new(evidence)));
+        }
         if status.code() == Some(3) {
             return Err(Error::ResourceLimit);
         }

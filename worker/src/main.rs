@@ -22,6 +22,13 @@ fn main() {
     if std::env::args().nth(1).as_deref() == Some("--engine-child") {
         match child() {
             Ok(()) => {}
+            Err(Error::Engine(evidence)) => {
+                let resource =
+                    evidence.outcome == labyrinth_worker::evidence::Outcome::Inconclusive;
+                let _ = serde_json::to_writer(std::io::stdout().lock(), &evidence);
+                let _ = std::io::stdout().flush();
+                std::process::exit(if resource { 3 } else { 2 });
+            }
             Err(Error::ResourceLimit) => std::process::exit(3),
             Err(_) => std::process::exit(2),
         }

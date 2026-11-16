@@ -33,3 +33,12 @@ Verified remote head `8f9a5c91412036022573268e8165b8d43af57dd5`:
 - [Backend container](https://github.com/Mosope-ade/labyrinth/actions/runs/43881543396): success.
 - [Engine contracts](https://github.com/Mosope-ade/labyrinth/actions/runs/43881542288): success.
 - [Backend PostgreSQL admission](https://github.com/Mosope-ade/labyrinth/actions/runs/43881542255): success.
+
+Remote CI for `928759b33844ea7be163692f9876c4074405e9a1` was verified successful:
+
+- [Engine contracts](https://github.com/Mosope-ade/labyrinth/actions/runs/43888050056).
+- [PostgreSQL admission](https://github.com/Mosope-ade/labyrinth/actions/runs/43888050050).
+- [Container build and smoke](https://github.com/Mosope-ade/labyrinth/actions/runs/43888049916).
+
+No failed jobs required a repair for that commit. This is remote CI evidence, not
+free-tier hosted provisioning or provider acceptance.

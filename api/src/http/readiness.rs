@@ -9,7 +9,7 @@ use std::time::Duration;
 pub(super) async fn ready(State(state): State<AppState>) -> Response {
     let result = async {
         let _permit = state.capacity.clone().try_acquire_owned().map_err(|_| ())?;
-        let correct:bool=sqlx::query_scalar("SELECT current_user='labyrinth_api' AND to_regprocedure('labyrinth.onboard_personal(uuid,integer,integer)') IS NOT NULL AND to_regprocedure('labyrinth.job_attempts(uuid,uuid,uuid,uuid)') IS NOT NULL AND to_regprocedure('labyrinth.admin_cancel_job(uuid,uuid,uuid,uuid,text)') IS NOT NULL AND to_regprocedure('labyrinth.prune_admin_audit(integer)') IS NOT NULL")
+        let correct:bool=sqlx::query_scalar("SELECT current_user='labyrinth_api' AND to_regprocedure('labyrinth.onboard_personal(uuid,integer,integer)') IS NOT NULL AND to_regprocedure('labyrinth.job_attempts(uuid,uuid,uuid,uuid)') IS NOT NULL AND to_regprocedure('labyrinth.admin_cancel_job(uuid,uuid,uuid,uuid,text)') IS NOT NULL AND to_regprocedure('labyrinth.prune_admin_audit(integer)') IS NOT NULL AND to_regprocedure('labyrinth.attempt_evidence(uuid,uuid,uuid,uuid,uuid)') IS NOT NULL")
             .fetch_one(&state.pool).await.map_err(|_|())?;
         if !correct {
             return Err(());

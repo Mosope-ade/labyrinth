@@ -450,6 +450,62 @@ async fn hosted_generation_upload_failure_recovery_publication_and_incremental_u
         reset.unwrap_err().as_database_error().unwrap().message(),
         "terminal_attempt_immutable"
     );
+    // A real child search-budget failure survives fencing/persistence without publication.
+    let evidence_project = Uuid::new_v4();
+    sqlx::query("INSERT INTO labyrinth.projects(tenant_id,id,name) VALUES($1,$2,'evidence')")
+        .bind(tenant)
+        .bind(evidence_project)
+        .execute(&db)
+        .await
+        .unwrap();
+    let options = artifacts::GenerationOptions {
+        selection_search_states: 1,
+        ..Default::default()
+    };
+    let evidence_job = admit(
+        &db,
+        &PreparedAdmission::new(
+            AdmissionContext {
+                actor_id: actor,
+                tenant_id: tenant,
+                project_id: evidence_project,
+                expected_head: None,
+            },
+            "evidence",
+            RAW,
+            &options,
+            &catalog,
+        )
+        .unwrap(),
+    )
+    .await
+    .unwrap()
+    .job_id;
+    assert!(
+        runtime::once_with_store(&worker, &cfg, &store)
+            .await
+            .unwrap()
+    );
+    assert_eq!(state(&db, evidence_job).await, "failed");
+    let evidence: serde_json::Value = sqlx::query_scalar(
+        "SELECT engine_evidence FROM labyrinth.attempts WHERE tenant_id=$1 AND job_id=$2",
+    )
+    .bind(tenant)
+    .bind(evidence_job)
+    .fetch_one(&db)
+    .await
+    .unwrap();
+    assert_eq!(evidence["outcome"], "inconclusive");
+    assert!(evidence["error"].is_object());
+    let revisions: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM labyrinth.revisions WHERE tenant_id=$1 AND project_id=$2",
+    )
+    .bind(tenant)
+    .bind(evidence_project)
+    .fetch_one(&db)
+    .await
+    .unwrap();
+    assert_eq!(revisions, 0);
     worker.close().await;
     db.close().await;
     sqlx::query(&format!("DROP DATABASE {name}"))
