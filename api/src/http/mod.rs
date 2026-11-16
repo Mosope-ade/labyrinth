@@ -1,6 +1,9 @@
 //! Authenticated, bounded job submission and authoritative status polling.
 mod discovery;
 mod error;
+mod onboarding;
+mod projects;
+pub use onboarding::OnboardingPolicy;
 mod routes;
 use crate::auth::{AuthError, JwksVerifier};
 use axum::{
@@ -12,6 +15,7 @@ use axum::{
     routing::{get, post},
 };
 use error::ApiError;
+pub use projects::ProjectPolicy;
 use sqlx::PgPool;
 use std::{sync::Arc, time::Duration};
 use tokio::sync::{OwnedSemaphorePermit, Semaphore};
@@ -24,6 +28,8 @@ struct AppState {
     capacity: Arc<Semaphore>,
     timeout: Duration,
     artifacts: Option<Arc<crate::artifacts::ArtifactReader>>,
+    projects: Option<ProjectPolicy>,
+    onboarding: Option<OnboardingPolicy>,
 }
 type WorkPermit = Arc<OwnedSemaphorePermit>;
 #[derive(Clone, Copy)]
@@ -45,6 +51,33 @@ pub fn router_with_artifacts(
     limits: HttpLimits,
     artifacts: Option<Arc<crate::artifacts::ArtifactReader>>,
 ) -> Result<Router, &'static str> {
+    router_with_project_policy(pool, auth, limits, artifacts, None)
+}
+pub fn router_with_project_policy(
+    pool: PgPool,
+    auth: Arc<JwksVerifier>,
+    limits: HttpLimits,
+    artifacts: Option<Arc<crate::artifacts::ArtifactReader>>,
+    projects: Option<ProjectPolicy>,
+) -> Result<Router, &'static str> {
+    router_with_onboarding(pool, auth, limits, artifacts, projects, None)
+}
+pub fn router_with_onboarding(
+    pool: PgPool,
+    auth: Arc<JwksVerifier>,
+    limits: HttpLimits,
+    artifacts: Option<Arc<crate::artifacts::ArtifactReader>>,
+    projects: Option<ProjectPolicy>,
+    onboarding: Option<OnboardingPolicy>,
+) -> Result<Router, &'static str> {
+    if onboarding.is_some_and(|p| !(1..=1000).contains(&p.max_active_jobs))
+        || (onboarding.is_some() && projects.is_none())
+    {
+        return Err("invalid onboarding policy");
+    }
+    if projects.is_some_and(|p| !(1..=10000).contains(&p.max_projects)) {
+        return Err("invalid project policy");
+    }
     if !(1..=256).contains(&limits.max_in_flight)
         || limits.request_timeout < Duration::from_secs(1)
         || limits.request_timeout > Duration::from_secs(30)
@@ -55,11 +88,25 @@ pub fn router_with_artifacts(
         pool,
         auth,
         artifacts,
+        projects,
+        onboarding,
         capacity: Arc::new(Semaphore::new(limits.max_in_flight)),
         timeout: limits.request_timeout,
     };
     let protected = Router::new()
-        .route("/v1/tenants/{tenant}/projects", get(discovery::projects))
+        .route("/v1/me", get(onboarding::identity))
+        .route(
+            "/v1/onboarding/personal-workspace",
+            post(onboarding::personal),
+        )
+        .route(
+            "/v1/tenants/{tenant}/projects/{project}",
+            get(projects::detail),
+        )
+        .route(
+            "/v1/tenants/{tenant}/projects",
+            get(discovery::projects).post(projects::create),
+        )
         .route(
             "/v1/tenants/{tenant}/projects/{project}/revisions",
             get(discovery::revisions),

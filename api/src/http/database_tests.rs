@@ -750,3 +750,354 @@ async fn revision_discovery_exposes_published_metadata_without_private_keys() {
     let helper:bool=sqlx::query_scalar("SELECT has_function_privilege('labyrinth_api','labyrinth.require_tenant_access(uuid,uuid)','EXECUTE')").fetch_one(&f.admin).await.unwrap();
     assert!(!helper);
 }
+
+impl Fixture {
+    fn project_app(&self, limit: i32) -> Router {
+        router_with_project_policy(
+            self.pool.clone(),
+            self.auth.clone(),
+            HttpLimits {
+                max_in_flight: 8,
+                request_timeout: Duration::from_secs(3),
+            },
+            None,
+            Some(ProjectPolicy {
+                max_projects: limit,
+            }),
+        )
+        .unwrap()
+    }
+    async fn create_project(
+        &self,
+        app: Router,
+        key: &str,
+        body: Value,
+        actor: Uuid,
+    ) -> (StatusCode, Value) {
+        let request = Request::builder()
+            .method("POST")
+            .uri(format!("/v1/tenants/{}/projects", self.tenant))
+            .header(
+                "authorization",
+                format!("Bearer {}", self.source.signer.token(&claims(actor))),
+            )
+            .header("content-type", "application/json")
+            .header("idempotency-key", key)
+            .body(Body::from(body.to_string()))
+            .unwrap();
+        let response = app.oneshot(request).await.unwrap();
+        let code = response.status();
+        let bytes = to_bytes(response.into_body(), 65536).await.unwrap();
+        (code, serde_json::from_slice(&bytes).unwrap())
+    }
+}
+#[tokio::test]
+async fn project_creation_is_transactional_idempotent_and_quota_bounded() {
+    let f = Fixture::new(2).await;
+    let app = f.project_app(2);
+    let (a, b) = tokio::join!(
+        f.create_project(app.clone(), "same", json!({"name":"New design"}), f.actor),
+        f.create_project(app.clone(), "same", json!({"name":"New design"}), f.actor)
+    );
+    assert!([a.0, b.0].contains(&StatusCode::CREATED));
+    assert!([a.0, b.0].contains(&StatusCode::OK));
+    assert_eq!(a.1["project_id"], b.1["project_id"]);
+    assert!(a.1["head_revision_id"].is_null());
+    let (code, _) = f
+        .create_project(app.clone(), "other", json!({"name":"Over quota"}), f.actor)
+        .await;
+    assert_eq!(code, StatusCode::TOO_MANY_REQUESTS);
+    let (code, _) = f
+        .create_project(
+            app.clone(),
+            "same",
+            json!({"name":"Different name"}),
+            f.actor,
+        )
+        .await;
+    assert_eq!(code, StatusCode::CONFLICT);
+    let (code, detail) = f
+        .send(
+            "GET",
+            &format!(
+                "/v1/tenants/{}/projects/{}",
+                f.tenant,
+                a.1["project_id"].as_str().unwrap()
+            ),
+            json!({}),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(detail["name"], "New design");
+    let count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM labyrinth.projects WHERE tenant_id=$1")
+            .bind(f.tenant)
+            .fetch_one(&f.admin)
+            .await
+            .unwrap();
+    assert_eq!(count, 2);
+}
+#[tokio::test]
+async fn distinct_project_creations_share_atomic_quota_and_current_permissions() {
+    let f = Fixture::new(2).await;
+    let app = f.project_app(2);
+    let (a, b) = tokio::join!(
+        f.create_project(app.clone(), "one", json!({"name":"One"}), f.actor),
+        f.create_project(app.clone(), "two", json!({"name":"Two"}), f.actor)
+    );
+    assert_eq!(
+        [a.0, b.0]
+            .iter()
+            .filter(|s| **s == StatusCode::CREATED)
+            .count(),
+        1
+    );
+    assert!([a.0, b.0].contains(&StatusCode::TOO_MANY_REQUESTS));
+    let successful = if a.0 == StatusCode::CREATED {
+        "one"
+    } else {
+        "two"
+    };
+    let name = if successful == "one" { "One" } else { "Two" };
+    sqlx::query("UPDATE labyrinth.memberships SET role='viewer' WHERE tenant_id=$1 AND user_id=$2")
+        .bind(f.tenant)
+        .bind(f.actor)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    let (code, _) = f
+        .create_project(app.clone(), successful, json!({"name":name}), f.actor)
+        .await;
+    assert_eq!(code, StatusCode::FORBIDDEN);
+    let (code, _) = f
+        .create_project(app, "outsider", json!({"name":"No"}), Uuid::new_v4())
+        .await;
+    assert_eq!(code, StatusCode::FORBIDDEN);
+}
+#[tokio::test]
+async fn project_creation_rejects_invalid_names_keys_fields_and_unconfigured_policy() {
+    let f = Fixture::new(2).await;
+    let app = f.project_app(50);
+    for body in [
+        json!({"name":""}),
+        json!({"name":" leading"}),
+        json!({"name":"line\nbreak"}),
+        json!({"name":"x".repeat(201)}),
+        json!({"name":"Allowed","actor_id":f.actor}),
+    ] {
+        let (code, _) = f
+            .create_project(app.clone(), "invalid", body, f.actor)
+            .await;
+        assert_eq!(code, StatusCode::BAD_REQUEST);
+    }
+    let (code, _) = f
+        .create_project(app, "bad key", json!({"name":"Fine"}), f.actor)
+        .await;
+    assert_eq!(code, StatusCode::BAD_REQUEST);
+    let (code, _) = f
+        .create_project(f.app(), "not-configured", json!({"name":"Fine"}), f.actor)
+        .await;
+    assert_eq!(code, StatusCode::SERVICE_UNAVAILABLE);
+    let (code, _) = f
+        .create_project(
+            f.project_app(50),
+            "oversized",
+            json!({"name":"x".repeat(9000)}),
+            f.actor,
+        )
+        .await;
+    assert_eq!(code, StatusCode::PAYLOAD_TOO_LARGE);
+    let count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM labyrinth.project_creations WHERE tenant_id=$1")
+            .bind(f.tenant)
+            .fetch_one(&f.admin)
+            .await
+            .unwrap();
+    assert_eq!(count, 0);
+}
+
+impl Fixture {
+    fn onboarding_app(&self) -> Router {
+        router_with_onboarding(
+            self.pool.clone(),
+            self.auth.clone(),
+            HttpLimits {
+                max_in_flight: 8,
+                request_timeout: Duration::from_secs(3),
+            },
+            None,
+            Some(ProjectPolicy { max_projects: 50 }),
+            Some(OnboardingPolicy { max_active_jobs: 2 }),
+        )
+        .unwrap()
+    }
+    async fn onboard(&self, app: Router, actor: Uuid, body: Value) -> (StatusCode, Value) {
+        let request = Request::builder()
+            .method("POST")
+            .uri("/v1/onboarding/personal-workspace")
+            .header(
+                "authorization",
+                format!("Bearer {}", self.source.signer.token(&claims(actor))),
+            )
+            .header("content-type", "application/json")
+            .body(Body::from(body.to_string()))
+            .unwrap();
+        let response = app.oneshot(request).await.unwrap();
+        let code = response.status();
+        let bytes = to_bytes(response.into_body(), 65536).await.unwrap();
+        (code, serde_json::from_slice(&bytes).unwrap())
+    }
+}
+#[tokio::test]
+async fn explicit_onboarding_is_single_owner_transaction_and_never_implicit() {
+    let f = Fixture::new(2).await;
+    let actor = Uuid::new_v4();
+    let app = f.onboarding_app();
+    let (code, before) = f.send("GET", "/v1/me", json!({}), "", actor).await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(before["provisioned"], false);
+    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM labyrinth.users WHERE id=$1")
+        .bind(actor)
+        .fetch_one(&f.admin)
+        .await
+        .unwrap();
+    assert_eq!(count, 0);
+    let (a, b) = tokio::join!(
+        f.onboard(app.clone(), actor, json!({})),
+        f.onboard(app.clone(), actor, json!({}))
+    );
+    assert!([a.0, b.0].contains(&StatusCode::CREATED));
+    assert!([a.0, b.0].contains(&StatusCode::OK));
+    assert_eq!(a.1["tenant_id"], b.1["tenant_id"]);
+    assert_eq!(a.1["role"], "owner");
+    assert_eq!(a.1["max_active_jobs"], 2);
+    assert_eq!(a.1["max_projects"], 50);
+    let tid: Uuid = serde_json::from_value(a.1["tenant_id"].clone()).unwrap();
+    let (code, after) = f.send("GET", "/v1/me", json!({}), "", actor).await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(after["personal_tenant_id"], tid.to_string());
+    assert_eq!(after["provisioned"], true);
+    sqlx::query("UPDATE labyrinth.tenants SET max_active_jobs=7 WHERE id=$1")
+        .bind(tid)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    let (code, replay) = f.onboard(app.clone(), actor, json!({})).await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(replay["max_active_jobs"], 7);
+    sqlx::query("UPDATE labyrinth.memberships SET role='viewer' WHERE tenant_id=$1 AND user_id=$2")
+        .bind(tid)
+        .bind(actor)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    let (_, replay) = f.onboard(app.clone(), actor, json!({})).await;
+    assert_eq!(replay["role"], "viewer");
+    sqlx::query("DELETE FROM labyrinth.memberships WHERE tenant_id=$1 AND user_id=$2")
+        .bind(tid)
+        .bind(actor)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    assert_eq!(
+        f.onboard(app, actor, json!({})).await.0,
+        StatusCode::FORBIDDEN
+    );
+    let count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM labyrinth.personal_workspaces WHERE user_id=$1")
+            .bind(actor)
+            .fetch_one(&f.admin)
+            .await
+            .unwrap();
+    assert_eq!(count, 1);
+}
+#[tokio::test]
+async fn onboarding_rejects_spoofed_authority_and_respects_suspension() {
+    let f = Fixture::new(2).await;
+    let actor = Uuid::new_v4();
+    let app = f.onboarding_app();
+    for body in [
+        json!({"actor_id":f.actor}),
+        json!({"role":"admin"}),
+        json!({"max_active_jobs":100}),
+        json!({"tenant_id":f.tenant}),
+    ] {
+        assert_eq!(
+            f.onboard(app.clone(), actor, body).await.0,
+            StatusCode::BAD_REQUEST
+        );
+    }
+    assert_eq!(
+        f.onboard(f.app(), actor, json!({})).await.0,
+        StatusCode::SERVICE_UNAVAILABLE
+    );
+    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM labyrinth.users WHERE id=$1")
+        .bind(actor)
+        .fetch_one(&f.admin)
+        .await
+        .unwrap();
+    assert_eq!(count, 0);
+    let (_, created) = f.onboard(app.clone(), actor, json!({})).await;
+    let tid: Uuid = serde_json::from_value(created["tenant_id"].clone()).unwrap();
+    sqlx::query("UPDATE labyrinth.tenants SET suspended=true WHERE id=$1")
+        .bind(tid)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    assert_eq!(
+        f.onboard(app.clone(), actor, json!({})).await.0,
+        StatusCode::FORBIDDEN
+    );
+    sqlx::query("UPDATE labyrinth.users SET suspended=true WHERE id=$1")
+        .bind(actor)
+        .execute(&f.admin)
+        .await
+        .unwrap();
+    assert_eq!(
+        f.onboard(app, actor, json!({})).await.0,
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        f.send("GET", "/v1/me", json!({}), "", actor).await.0,
+        StatusCode::FORBIDDEN
+    );
+}
+#[tokio::test]
+async fn personal_tenant_project_quota_is_persisted_not_replaced_by_deployment_policy() {
+    let f = Fixture::new(2).await;
+    let actor = Uuid::new_v4();
+    let app = f.onboarding_app();
+    let (_, created) = f.onboard(app, actor, json!({})).await;
+    let tid: Uuid = serde_json::from_value(created["tenant_id"].clone()).unwrap();
+    sqlx::query("INSERT INTO labyrinth.projects(tenant_id,id,name) SELECT $1,gen_random_uuid(),'seed' FROM generate_series(1,49)").bind(tid).execute(&f.admin).await.unwrap();
+    let app = f.project_app(1000);
+    for (key, expected) in [
+        ("last", StatusCode::CREATED),
+        ("over", StatusCode::TOO_MANY_REQUESTS),
+    ] {
+        let request = Request::builder()
+            .method("POST")
+            .uri(format!("/v1/tenants/{tid}/projects"))
+            .header(
+                "authorization",
+                format!("Bearer {}", f.source.signer.token(&claims(actor))),
+            )
+            .header("content-type", "application/json")
+            .header("idempotency-key", key)
+            .body(Body::from("{\"name\":\"New\"}"))
+            .unwrap();
+        assert_eq!(
+            app.clone().oneshot(request).await.unwrap().status(),
+            expected
+        );
+    }
+    let private: bool = sqlx::query_scalar(
+        "SELECT has_table_privilege('labyrinth_api','labyrinth.personal_workspaces','SELECT')",
+    )
+    .fetch_one(&f.admin)
+    .await
+    .unwrap();
+    assert!(!private);
+}

@@ -88,3 +88,15 @@ See [cancellation/download acceptance](../docs/testing/cancellation-downloads.md
 Clients can browse authorized projects, published revisions and artifact inventories
 through [project discovery V1](../docs/contracts/project-discovery-v1.md), using bounded
 UUID cursor pagination. Project creation/provisioning remains separate work.
+
+Project creation and project detail are specified in
+[project creation V1](../docs/contracts/project-creation-v1.md). Creation requires
+an explicitly configured LABYRINTH_TENANT_MAX_PROJECTS, current owner/editor access
+and an idempotency key. No login or project request silently creates a tenant.
+
+[Authentication/onboarding V1](../docs/contracts/auth-onboarding-v1.md) adds GET /v1/me
+and explicit POST /v1/onboarding/personal-workspace. The example policy configures two
+active jobs and 50 projects for a new personal tenant. Read
+[provider setup](../docs/runbooks/auth-onboarding.md) before hosted rollout. Supabase
+and the GUI/CLI auth clients own magic-link/PKCE login, refresh and logout; this API
+does not proxy or persist refresh credentials.

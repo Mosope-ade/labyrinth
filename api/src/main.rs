@@ -10,7 +10,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let auth = Arc::new(JwksVerifier::load(config.auth.clone()).await?);
     let pool = config.connect().await?;
     let artifacts = labyrinth_api::artifacts::ArtifactReader::from_env()?.map(Arc::new);
-    let app = http::router_with_artifacts(pool.clone(), auth, config.http, artifacts)?;
+    let app = http::router_with_onboarding(
+        pool.clone(),
+        auth,
+        config.http,
+        artifacts,
+        http::ProjectPolicy::from_env()?,
+        http::OnboardingPolicy::from_env()?,
+    )?;
     let listener = tokio::net::TcpListener::bind(config.bind).await?;
     tracing::info!(event="api_started",address=%listener.local_addr()?);
     axum::serve(listener, app)

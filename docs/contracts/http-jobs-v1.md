@@ -149,3 +149,11 @@ loopback storage fixture, not a production plaintext configuration switch.
 Project listing, published revision listing and artifact-inventory metadata are now
 available through [project discovery V1](project-discovery-v1.md). These reads share
 the existing bearer authentication, current tenant authorization and HTTP guards.
+
+Existing tenants can use [project creation V1](project-creation-v1.md) with an explicit
+project-cap policy. Project creation is a separate idempotent transaction; signing
+in still does not provision a tenant or membership.
+
+Explicit [personal-workspace onboarding](auth-onboarding-v1.md) is now supported after
+provider login. Signing in alone still creates nothing; a deliberate authenticated
+POST provisions the application user, tenant and owner membership atomically.

@@ -705,3 +705,34 @@ See [contract](docs/contracts/project-discovery-v1.md) and
 [acceptance](docs/testing/project-discovery.md). Project/tenant creation and other
 management mutations, authentication onboarding, diagnostics, admin APIs and hosted
 deployment/restore acceptance remain separate unfinished backend work.
+
+## Project creation checkpoint — 2026-11-16
+
+- [x] Tenant-scoped owner/editor project creation and member-readable project detail.
+- [x] Immutable actor-scoped idempotency records, serialized quota admission and
+  strict bounded names/body validation.
+- [x] Explicit project-cap configuration; no inferred production quota or automatic
+  tenant/member provisioning. Concurrent signed-request/PostgreSQL tests.
+
+See [contract](docs/contracts/project-creation-v1.md) and
+[acceptance](docs/testing/project-creation.md). Authentication onboarding is paused
+for the user's login-method, provisioning and quota decisions. Existing bearer/JWKS
+verification remains in place. No frontend/CLI login UI or hosted auth configuration
+has been created by this checkpoint.
+
+## Explicit personal onboarding checkpoint — 2026-11-16
+
+- [x] User selected Supabase email magic links with PKCE; GUI/CLI own authentication
+  sessions, code exchange, refresh and logout; API remains an access-token resource server.
+- [x] User selected explicit personal-workspace creation (one per authenticated
+  subject), initial two active jobs and 50 persisted projects; configured explicitly.
+- [x] Side-effect-free identity inspection, concurrent idempotent onboarding, immutable
+  personal mapping, current permission/suspension checks and no administrator grants.
+- [x] Replay preserves quotas and cannot restore revoked membership or demoted roles.
+- [x] Signed-token/PostgreSQL acceptance, project-quota checks, provider setup runbook.
+
+See [ADR 0007](docs/decisions/0007-personal-workspace-onboarding.md),
+[contract](docs/contracts/auth-onboarding-v1.md) and
+[acceptance](docs/testing/auth-onboarding.md). This supersedes the prior pending
+login-method/provisioning/initial-quota decisions. Hosted provider configuration,
+actual email/PKCE/refresh/logout acceptance and GUI/CLI auth clients remain pending.

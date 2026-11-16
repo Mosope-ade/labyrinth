@@ -625,7 +625,8 @@ Core decisions settled during implementation:
 Before hosted implementation:
 - Provider selection is settled in ADR 0003: Cloudflare Pages, Render, Supabase
   Postgres/Auth/Storage/Queues and GitHub Releases. Exact regions, service sizing and
-  API/CLI interactive/scripted authentication contracts remain to be finalized.
+  interactive magic-link/PKCE authentication is specified in ADR 0007; scripted
+  authentication and client implementation remain to be finalized.
 - Total job CPU/memory/time limits, queue/concurrency quotas and bounded retry policy.
 
 Before AI integration:
@@ -688,3 +689,20 @@ interfaces, including safe artifact inventory metadata. Pagination uses immutabl
 UUID cursors with a documented non-snapshot ordering contract. See
 [project discovery V1](docs/contracts/project-discovery-v1.md). This does not implement
 tenant provisioning, project mutations or administrator capabilities.
+
+Project creation for already provisioned tenants now requires current owner/editor
+membership, actor-scoped idempotency and an explicit project-limit policy, with quota
+admission serialized inside PostgreSQL. See
+[project creation V1](docs/contracts/project-creation-v1.md). Authentication onboarding now follows the explicit personal-workspace contract
+below; no sign-in silently creates application users, tenant memberships or
+administrator rights.
+
+Authentication/onboarding decisions are settled: Supabase email magic links with
+PKCE; explicit creation of one personal workspace per authenticated subject; two
+active generation jobs and 50 projects as initial persisted tenant quotas. Sign-in
+and GET /v1/me create nothing. Onboarding is transactional/idempotent, never grants
+admin, preserves existing job quotas and cannot recreate revoked membership. The
+resource API does not handle passwords, refresh tokens or client PKCE verifiers.
+See [ADR 0007](docs/decisions/0007-personal-workspace-onboarding.md) and
+[auth/onboarding V1](docs/contracts/auth-onboarding-v1.md). Provider/client login
+implementation and live acceptance remain separate from this completed backend slice.
