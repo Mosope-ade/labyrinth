@@ -27,3 +27,9 @@ was compiled without the PostgreSQL tests that use it. Its cfg now matches that 
 feature; no warning suppression was added. Both default and all-feature Clippy gates
 passed locally. Checkout is pinned to the official v7.0.1 revision using Node 24,
 verified from the action's release/tag and action.yml; credentials remain nonpersistent.
+
+Verified remote head `8f9a5c91412036022573268e8165b8d43af57dd5`:
+
+- [Backend container](https://github.com/Mosope-ade/labyrinth/actions/runs/43881543396): success.
+- [Engine contracts](https://github.com/Mosope-ade/labyrinth/actions/runs/43881542288): success.
+- [Backend PostgreSQL admission](https://github.com/Mosope-ade/labyrinth/actions/runs/43881542255): success.

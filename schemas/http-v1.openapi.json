@@ -1,0 +1,1120 @@
+{
+  "components": {
+    "schemas": {
+      "CreateProjectRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "Error": {
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "details": {},
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "type": "object"
+      },
+      "GenerationOptions": {
+        "$defs": {
+          "AddressingPolicy": {
+            "additionalProperties": false,
+            "description": "Defaults for the first blueprint, supplied explicitly to topology planning.",
+            "properties": {
+              "allocate_loopbacks": {
+                "type": "boolean"
+              },
+              "redundant_gateway_reservations": {
+                "format": "uint16",
+                "maximum": 65535,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "single_gateway_reservations": {
+                "format": "uint16",
+                "maximum": 65535,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "transit_prefix_len": {
+                "format": "uint8",
+                "maximum": 31,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "vlans": {
+                "$ref": "#/components/schemas/GenerationOptions/$defs/VlanPolicy"
+              }
+            },
+            "required": [
+              "single_gateway_reservations",
+              "redundant_gateway_reservations",
+              "transit_prefix_len",
+              "allocate_loopbacks",
+              "vlans"
+            ],
+            "type": "object"
+          },
+          "DeviceId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "LogicalPolicy": {
+            "additionalProperties": false,
+            "properties": {
+              "preferred_owners": {
+                "additionalProperties": false,
+                "default": {},
+                "patternProperties": {
+                  "^[a-z][a-z0-9_-]{0,63}$": {
+                    "$ref": "#/components/schemas/GenerationOptions/$defs/DeviceId"
+                  }
+                },
+                "type": "object"
+              },
+              "preferred_roots": {
+                "additionalProperties": false,
+                "default": {},
+                "patternProperties": {
+                  "^[a-z][a-z0-9_-]{0,63}$": {
+                    "$ref": "#/components/schemas/GenerationOptions/$defs/DeviceId"
+                  }
+                },
+                "type": "object"
+              },
+              "routing_limits": {
+                "$ref": "#/components/schemas/GenerationOptions/$defs/RoutingLimits",
+                "default": {
+                  "max_paths_per_demand": 64,
+                  "max_search_states": 100000,
+                  "timeout_ms": 15000
+                }
+              }
+            },
+            "type": "object"
+          },
+          "RoutingLimits": {
+            "additionalProperties": false,
+            "properties": {
+              "max_paths_per_demand": {
+                "format": "uint",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "max_search_states": {
+                "format": "uint64",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "timeout_ms": {
+                "format": "uint64",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "max_search_states",
+              "max_paths_per_demand",
+              "timeout_ms"
+            ],
+            "type": "object"
+          },
+          "VerificationLimits": {
+            "additionalProperties": false,
+            "properties": {
+              "max_scenarios": {
+                "format": "uint",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "max_service_classes": {
+                "format": "uint",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "max_scenarios",
+              "max_service_classes"
+            ],
+            "type": "object"
+          },
+          "VlanPolicy": {
+            "additionalProperties": false,
+            "properties": {
+              "excluded": {
+                "items": {
+                  "format": "uint16",
+                  "maximum": 65535,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              "first": {
+                "format": "uint16",
+                "maximum": 4094,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "last": {
+                "format": "uint16",
+                "maximum": 4094,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "reuse_across_sites": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "first",
+              "last",
+              "excluded",
+              "reuse_across_sites"
+            ],
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "addressing": {
+            "$ref": "#/components/schemas/GenerationOptions/$defs/AddressingPolicy"
+          },
+          "logical": {
+            "$ref": "#/components/schemas/GenerationOptions/$defs/LogicalPolicy"
+          },
+          "selection_search_states": {
+            "format": "uint64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "verification": {
+            "$ref": "#/components/schemas/GenerationOptions/$defs/VerificationLimits"
+          }
+        },
+        "required": [
+          "addressing",
+          "logical",
+          "verification",
+          "selection_search_states"
+        ],
+        "title": "GenerationOptions",
+        "type": "object"
+      },
+      "Intent": {
+        "$defs": {
+          "AllocationPin": {
+            "additionalProperties": false,
+            "properties": {
+              "subnet": {
+                "$ref": "#/components/schemas/Intent/$defs/Ipv4Prefix"
+              },
+              "zone": {
+                "$ref": "#/components/schemas/Intent/$defs/ZoneId"
+              }
+            },
+            "required": [
+              "zone",
+              "subnet"
+            ],
+            "type": "object"
+          },
+          "ArchetypeId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "BlueprintChoice": {
+            "enum": [
+              "automatic",
+              "hub_spoke",
+              "three_tier_campus",
+              "spine_leaf"
+            ],
+            "type": "string"
+          },
+          "CorePin": {
+            "additionalProperties": false,
+            "properties": {
+              "archetype": {
+                "$ref": "#/components/schemas/Intent/$defs/ArchetypeId"
+              },
+              "device": {
+                "$ref": "#/components/schemas/Intent/$defs/DeviceId"
+              },
+              "site": {
+                "$ref": "#/components/schemas/Intent/$defs/SiteId"
+              }
+            },
+            "required": [
+              "device",
+              "site",
+              "archetype"
+            ],
+            "type": "object"
+          },
+          "DeviceId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "EndpointAttachment": {
+            "additionalProperties": false,
+            "description": "Per-endpoint physical attachment. Missing attachment defaults to 1 Gbps copper.",
+            "properties": {
+              "media": {
+                "$ref": "#/components/schemas/Intent/$defs/Media"
+              },
+              "poe_watts_per_endpoint": {
+                "format": "uint16",
+                "maximum": 65535,
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "speed_mbps": {
+                "format": "uint64",
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "speed_mbps",
+              "media"
+            ],
+            "type": "object"
+          },
+          "FailureDomainId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "Feature": {
+            "enum": [
+              "routing",
+              "switching",
+              "vlan",
+              "ospf",
+              "bgp",
+              "static_routing",
+              "firewall",
+              "ips",
+              "vpn",
+              "nat",
+              "lacp",
+              "ecmp",
+              "poe",
+              "high_availability",
+              "rapid_spanning_tree",
+              "session_steering"
+            ],
+            "type": "string"
+          },
+          "FlowId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "FlowPolicy": {
+            "additionalProperties": false,
+            "properties": {
+              "action": {
+                "$ref": "#/components/schemas/Intent/$defs/PolicyAction"
+              },
+              "from_zone": {
+                "$ref": "#/components/schemas/Intent/$defs/ZoneId"
+              },
+              "id": {
+                "$ref": "#/components/schemas/Intent/$defs/PolicyId"
+              },
+              "service": {
+                "$ref": "#/components/schemas/Intent/$defs/ServiceMatch"
+              },
+              "to_zone": {
+                "$ref": "#/components/schemas/Intent/$defs/ZoneId"
+              }
+            },
+            "required": [
+              "id",
+              "from_zone",
+              "to_zone",
+              "action",
+              "service"
+            ],
+            "type": "object"
+          },
+          "Ipv4Prefix": {
+            "description": "Canonical IPv4 network CIDR; host bits are rejected, never silently discarded.",
+            "type": "string"
+          },
+          "Media": {
+            "enum": [
+              "copper",
+              "fiber",
+              "virtual"
+            ],
+            "type": "string"
+          },
+          "PolicyAction": {
+            "enum": [
+              "allow",
+              "deny"
+            ],
+            "type": "string"
+          },
+          "PolicyId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "PortRange": {
+            "additionalProperties": false,
+            "properties": {
+              "end": {
+                "format": "uint16",
+                "maximum": 65535,
+                "minimum": 0,
+                "type": "integer"
+              },
+              "start": {
+                "format": "uint16",
+                "maximum": 65535,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ],
+            "type": "object"
+          },
+          "Protocol": {
+            "enum": [
+              "any",
+              "tcp",
+              "udp",
+              "icmp"
+            ],
+            "type": "string"
+          },
+          "RedundancyTier": {
+            "enum": [
+              "tier0_none",
+              "tier1_link",
+              "tier2_device",
+              "tier3_site"
+            ],
+            "type": "string"
+          },
+          "RevisionId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "ServiceMatch": {
+            "additionalProperties": false,
+            "properties": {
+              "destination_ports": {
+                "items": {
+                  "$ref": "#/components/schemas/Intent/$defs/PortRange"
+                },
+                "type": "array"
+              },
+              "protocol": {
+                "$ref": "#/components/schemas/Intent/$defs/Protocol"
+              }
+            },
+            "required": [
+              "protocol",
+              "destination_ports"
+            ],
+            "type": "object"
+          },
+          "SessionCohort": {
+            "additionalProperties": false,
+            "properties": {
+              "session_peak_mbps": {
+                "format": "uint64",
+                "minimum": 1,
+                "type": "integer"
+              },
+              "simultaneous_sessions": {
+                "format": "uint32",
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "session_peak_mbps",
+              "simultaneous_sessions"
+            ],
+            "type": "object"
+          },
+          "SessionGrowth": {
+            "enum": [
+              "rates",
+              "concurrency"
+            ],
+            "type": "string"
+          },
+          "SiteId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "SiteRequirement": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Intent/$defs/SiteId"
+              },
+              "isp_failure_domains": {
+                "items": {
+                  "$ref": "#/components/schemas/Intent/$defs/FailureDomainId"
+                },
+                "type": [
+                  "array",
+                  "null"
+                ]
+              },
+              "location": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "role": {
+                "$ref": "#/components/schemas/Intent/$defs/SiteRole"
+              },
+              "zones": {
+                "items": {
+                  "$ref": "#/components/schemas/Intent/$defs/ZoneRequirement"
+                },
+                "type": [
+                  "array",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "role"
+            ],
+            "type": "object"
+          },
+          "SiteRole": {
+            "enum": [
+              "hub",
+              "branch",
+              "campus",
+              "data_center",
+              "other"
+            ],
+            "type": "string"
+          },
+          "TrafficDemand": {
+            "additionalProperties": false,
+            "properties": {
+              "distribution": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Intent/$defs/TrafficDistribution"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "from_zone": {
+                "$ref": "#/components/schemas/Intent/$defs/ZoneId"
+              },
+              "id": {
+                "$ref": "#/components/schemas/Intent/$defs/FlowId"
+              },
+              "peak_mbps": {
+                "format": "uint64",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "to_zone": {
+                "$ref": "#/components/schemas/Intent/$defs/ZoneId"
+              }
+            },
+            "required": [
+              "id",
+              "from_zone",
+              "to_zone",
+              "peak_mbps"
+            ],
+            "type": "object"
+          },
+          "TrafficDistribution": {
+            "description": "Session cohorts are simultaneous upper-bound reservations, not average rates.\nSessions remain indivisible even when a demand may use multiple paths.",
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "const": "single_path",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "cohorts": {
+                    "items": {
+                      "$ref": "#/components/schemas/Intent/$defs/SessionCohort"
+                    },
+                    "maxItems": 64,
+                    "minItems": 1,
+                    "type": "array"
+                  },
+                  "growth": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/Intent/$defs/SessionGrowth"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mode": {
+                    "const": "sessions",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "cohorts"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "UpdateMode": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "const": "stateless_redesign",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "base_revision": {
+                    "$ref": "#/components/schemas/Intent/$defs/RevisionId"
+                  },
+                  "core_pins": {
+                    "items": {
+                      "$ref": "#/components/schemas/Intent/$defs/CorePin"
+                    },
+                    "type": "array"
+                  },
+                  "ipam_pins": {
+                    "items": {
+                      "$ref": "#/components/schemas/Intent/$defs/AllocationPin"
+                    },
+                    "type": "array"
+                  },
+                  "mode": {
+                    "const": "incremental_update",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "mode",
+                  "base_revision",
+                  "ipam_pins",
+                  "core_pins"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "WanService": {
+            "additionalProperties": false,
+            "description": "Explicit confirmed attachment to an abstract WAN service. Matching provider\nnames alone never imply connectivity. Each connected peer must reciprocate.",
+            "properties": {
+              "committed_bandwidth_mbps": {
+                "format": "uint64",
+                "minimum": 1,
+                "type": "integer"
+              },
+              "connected_sites": {
+                "items": {
+                  "$ref": "#/components/schemas/Intent/$defs/SiteId"
+                },
+                "maxItems": 63,
+                "type": "array"
+              },
+              "provider_failure_domain": {
+                "$ref": "#/components/schemas/Intent/$defs/FailureDomainId"
+              },
+              "site": {
+                "$ref": "#/components/schemas/Intent/$defs/SiteId"
+              }
+            },
+            "required": [
+              "site",
+              "provider_failure_domain",
+              "committed_bandwidth_mbps",
+              "connected_sites"
+            ],
+            "type": "object"
+          },
+          "ZoneId": {
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "ZoneRequirement": {
+            "additionalProperties": false,
+            "properties": {
+              "endpoint_attachment": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/Intent/$defs/EndpointAttachment"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "endpoint_count": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "id": {
+                "$ref": "#/components/schemas/Intent/$defs/ZoneId"
+              },
+              "poe_load_watts": {
+                "format": "uint32",
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "required_features": {
+                "items": {
+                  "$ref": "#/components/schemas/Intent/$defs/Feature"
+                },
+                "type": [
+                  "array",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ],
+            "type": "object"
+          }
+        },
+        "additionalProperties": false,
+        "properties": {
+          "blueprint": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Intent/$defs/BlueprintChoice"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "demands": {
+            "items": {
+              "$ref": "#/components/schemas/Intent/$defs/TrafficDemand"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "excluded_ipv4": {
+            "default": null,
+            "items": {
+              "$ref": "#/components/schemas/Intent/$defs/Ipv4Prefix"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "growth_percent": {
+            "format": "uint8",
+            "maximum": 255,
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "ipv4_pool": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Intent/$defs/Ipv4Prefix"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "policies": {
+            "items": {
+              "$ref": "#/components/schemas/Intent/$defs/FlowPolicy"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "redundancy": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Intent/$defs/RedundancyTier"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "schema_version": {
+            "type": "string"
+          },
+          "sites": {
+            "items": {
+              "$ref": "#/components/schemas/Intent/$defs/SiteRequirement"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "spare_port_target_percent": {
+            "format": "uint8",
+            "maximum": 255,
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "update": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Intent/$defs/UpdateMode"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "wan_services": {
+            "items": {
+              "$ref": "#/components/schemas/Intent/$defs/WanService"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "schema_version"
+        ],
+        "title": "PartialIntent",
+        "type": "object"
+      },
+      "OnboardingRequest": {
+        "additionalProperties": false,
+        "properties": {},
+        "required": [],
+        "type": "object"
+      },
+      "SubmitJobRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "catalog_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "expected_head_revision_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "intent": {
+            "$ref": "#/components/schemas/Intent"
+          },
+          "options": {
+            "$ref": "#/components/schemas/GenerationOptions"
+          }
+        },
+        "required": [
+          "intent",
+          "catalog_sha256",
+          "expected_head_revision_id"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "bearerFormat": "JWT",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "description": "Admission request subset. Response payloads, discovery, downloads and admin operations are specified in docs/contracts; this document does not claim complete API coverage.",
+    "title": "Labyrinth admission API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/health/live": {
+      "get": {
+        "operationId": "liveness",
+        "responses": {
+          "204": {
+            "description": "Healthy"
+          }
+        },
+        "security": []
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "readiness",
+        "responses": {
+          "204": {
+            "description": "Healthy"
+          },
+          "503": {
+            "description": "Not ready (readiness only)"
+          }
+        },
+        "security": []
+      }
+    },
+    "/v1/onboarding/personal-workspace": {
+      "post": {
+        "operationId": "onboardPersonalWorkspace",
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Idempotent replay"
+          },
+          "201": {
+            "description": "Created or admitted"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; see endpoint Markdown contract for status semantics"
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenant}/projects": {
+      "post": {
+        "operationId": "createProject",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProjectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Idempotent replay"
+          },
+          "201": {
+            "description": "Created or admitted"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; see endpoint Markdown contract for status semantics"
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenant}/projects/{project}/jobs": {
+      "post": {
+        "operationId": "submitGeneration",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tenant",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "project",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9._:-]+$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitJobRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Idempotent replay"
+          },
+          "202": {
+            "description": "Created or admitted"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "description": "Structured error; see endpoint Markdown contract for status semantics"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "servers": [
+    {
+      "url": "/"
+    }
+  ]
+}

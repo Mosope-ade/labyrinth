@@ -17,6 +17,7 @@ labyrinth-engine = { path = "../engine" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["raw_value"] }
 sha2 = "0.10"
+schemars = "1"
 thiserror = "2"
 uuid = { version = "1", features = ["v4", "serde"] }
 sqlx = { version = "0.8.6", default-features = false, features = ["runtime-tokio", "tls-rustls-ring", "postgres", "uuid", "json", "migrate", "macros"] }
@@ -31,6 +32,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json"] }
 
 [dev-dependencies]
+jsonschema = { version = "0.33", default-features = false }
 tower = { version = "0.5", features = ["util"] }
 p256 = { version = "0.13", features = ["pem", "pkcs8"] }
 rand_core = { version = "0.6", features = ["getrandom"] }

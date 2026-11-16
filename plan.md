@@ -790,6 +790,20 @@ acceptance remain unfinished. No admin GUI has been built.
 
 See [deployment preparation](deploy/README.md),
 [runbook](docs/runbooks/staging-deployment.md) and
-[acceptance](docs/testing/deployment-preparation.md). Actual container CI, region/budget
+[acceptance](docs/testing/deployment-preparation.md). Region/budget
 approval, provider credentials/provisioning and live load/restore/Auth/Storage checks
 must be confirmed separately. Local native smoke is not a container deployment claim.
+
+## Admission contract export checkpoint — 2026-11-16
+
+- [x] OpenAPI 3.1 request subset for onboarding, project creation and job admission,
+  with engine-derived intent/options schemas, strict authority boundaries and
+  export-freshness/reference validation tests.
+- [ ] Typed success responses and discovery/admin/download OpenAPI coverage before
+  treating the export as a complete SDK contract.
+
+See [scope and regeneration](docs/contracts/openapi-admission-v1.md).
+
+Remote CI on `8f9a5c9` passed engine contracts, PostgreSQL admission and the actual
+backend container build/smoke workflows. This confirms container execution, not
+provider provisioning or live staging acceptance.

@@ -8,3 +8,5 @@ pub mod http;
 pub mod runtime;
 
 pub mod artifacts;
+
+pub mod openapi;
