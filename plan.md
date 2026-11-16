@@ -749,3 +749,14 @@ See [contract](docs/contracts/job-diagnostics-v1.md) and
 [acceptance](docs/testing/job-diagnostics.md). Full core counterexample transport,
 overall metadata retention, admin APIs and hosted deployment/restore acceptance
 remain open. No raw diagnostics/exception-text artifact store has been introduced.
+
+## AI-free client workflow checkpoint — 2026-11-16
+
+- [x] Current admitted catalog metadata discovery and hash-validated bundle reads.
+- [x] Tenant-authorized structured-intent validation shares admission's readiness,
+  blueprint and options checks; no AI, generation or persistent draft is required.
+- [x] Bounded project job listing for reconnect/status recovery.
+
+See [contract](docs/contracts/client-workflow-v1.md) and
+[acceptance](docs/testing/client-workflow.md). Admin mutation boundaries and deployment
+packaging/acceptance remain separate work; no catalog default is silently selected.

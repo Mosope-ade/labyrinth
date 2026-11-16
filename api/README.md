@@ -103,3 +103,6 @@ does not proxy or persist refresh credentials.
 
 [Attempt diagnostics](../docs/contracts/job-diagnostics-v1.md) expose safe attempt
 history and retry scheduling. No raw worker errors or storage/runtime keys are returned.
+
+[AI-free workflow discovery](../docs/contracts/client-workflow-v1.md) lets clients
+select an admitted catalog hash, validate/clarify intent and recover project jobs.

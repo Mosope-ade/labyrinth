@@ -1166,3 +1166,87 @@ async fn attempt_diagnostics_are_scoped_redacted_and_distinguish_inconclusive_ex
         StatusCode::FORBIDDEN
     );
 }
+
+#[tokio::test]
+async fn clients_discover_admitted_catalogs_validate_without_ai_and_list_scoped_jobs() {
+    let f = Fixture::new(2).await;
+    let root = format!("/v1/tenants/{}", f.tenant);
+    let (code, list) = f
+        .send(
+            "GET",
+            &format!("{root}/catalogs?limit=100"),
+            json!({}),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(code, StatusCode::OK);
+    assert!(
+        list["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|v| v["sha256"] == f.hash)
+    );
+    let (code, catalog) = f
+        .send(
+            "GET",
+            &format!("{root}/catalogs/{}", f.hash),
+            json!({}),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(catalog["catalog_version"]["sha256"], f.hash);
+    let (code, ready) = f
+        .send(
+            "POST",
+            &format!("{root}/intent/validate"),
+            json!({"intent":serde_json::from_str::<Value>(RAW).unwrap()}),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(ready["status"], "ready");
+    assert_eq!(ready["assurance"], "requirements_validated_not_generated");
+    let (code, missing) = f
+        .send(
+            "POST",
+            &format!("{root}/intent/validate"),
+            json!({"intent":{"schema_version":"intent_v1","name":"Partial"}}),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(code, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(missing["error"]["code"], "needs_clarification");
+    let (_, job) = f
+        .send("POST", &f.path(), f.body(), "workflow-job", f.actor)
+        .await;
+    let (code, jobs) = f
+        .send(
+            "GET",
+            &format!("{}?limit=1", f.path()),
+            json!({}),
+            "",
+            f.actor,
+        )
+        .await;
+    assert_eq!(code, StatusCode::OK);
+    assert_eq!(jobs["items"][0]["job_id"], job["job_id"]);
+    assert!(!jobs.to_string().contains("requirements"));
+    assert_eq!(
+        f.send(
+            "GET",
+            &format!("{root}/catalogs"),
+            json!({}),
+            "",
+            Uuid::new_v4()
+        )
+        .await
+        .0,
+        StatusCode::FORBIDDEN
+    );
+}

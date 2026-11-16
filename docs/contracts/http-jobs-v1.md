@@ -161,3 +161,6 @@ POST provisions the application user, tenant and owner membership atomically.
 [Attempt diagnostics V1](job-diagnostics-v1.md) exposes authenticated bounded attempt
 history, safe failure categories and retry timing without private runtime metadata.
 An inconclusive diagnostic is distinct from the job lifecycle's failed state.
+
+[Client workflow discovery](client-workflow-v1.md) adds admitted-catalog browsing,
+shared structured-intent validation/clarification and bounded job listing.

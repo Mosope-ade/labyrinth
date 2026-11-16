@@ -15,11 +15,11 @@ use uuid::Uuid;
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(super) struct PageQuery {
-    limit: Option<usize>,
-    after: Option<Uuid>,
+    pub(super) limit: Option<usize>,
+    pub(super) after: Option<Uuid>,
 }
 impl PageQuery {
-    fn limit(&self) -> Result<usize, ApiError> {
+    pub(super) fn limit(&self) -> Result<usize, ApiError> {
         let limit = self.limit.unwrap_or(25);
         if !(1..=100).contains(&limit) {
             return Err(ApiError::invalid());
@@ -27,7 +27,7 @@ impl PageQuery {
         Ok(limit)
     }
 }
-fn page(value: Value, limit: usize, id: &str) -> Result<Response, ApiError> {
+pub(super) fn page(value: Value, limit: usize, id: &str) -> Result<Response, ApiError> {
     let mut items = value
         .as_array()
         .ok_or_else(|| {

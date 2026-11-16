@@ -6,6 +6,7 @@ mod onboarding;
 mod projects;
 pub use onboarding::OnboardingPolicy;
 mod routes;
+mod workflow;
 use crate::auth::{AuthError, JwksVerifier};
 use axum::{
     Router,
@@ -95,6 +96,15 @@ pub fn router_with_onboarding(
         timeout: limits.request_timeout,
     };
     let protected = Router::new()
+        .route("/v1/tenants/{tenant}/catalogs", get(workflow::catalogs))
+        .route(
+            "/v1/tenants/{tenant}/catalogs/{hash}",
+            get(workflow::catalog),
+        )
+        .route(
+            "/v1/tenants/{tenant}/intent/validate",
+            post(workflow::validate),
+        )
         .route(
             "/v1/tenants/{tenant}/projects/{project}/jobs/{job}/attempts",
             get(diagnostics::attempts),
@@ -122,7 +132,7 @@ pub fn router_with_onboarding(
         )
         .route(
             "/v1/tenants/{tenant}/projects/{project}/jobs",
-            post(routes::submit),
+            post(routes::submit).get(workflow::jobs),
         )
         .route(
             "/v1/tenants/{tenant}/projects/{project}/jobs/{job}",

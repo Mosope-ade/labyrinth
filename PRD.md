@@ -714,3 +714,8 @@ engine rejection does not claim a proof. The worker preserves cooperative search
 exhaustion through its subprocess boundary and records classifications atomically
 under its current fence. See [attempt diagnostics V1](docs/contracts/job-diagnostics-v1.md).
 Full counterexample transport and diagnostic/history retention remain separate work.
+
+AI-free clients can discover admitted catalog hashes, validate/clarify structured
+requirements using admission's shared pipeline, and list project jobs without private
+input disclosure. See [client workflow V1](docs/contracts/client-workflow-v1.md).
+Validation readiness is not engineering verification or a feasibility guarantee.

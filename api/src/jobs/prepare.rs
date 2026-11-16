@@ -51,24 +51,7 @@ impl PreparedAdmission {
                 "invalid idempotency key".into(),
             ));
         }
-        let ready = intent::parse_json(raw_intent).map_err(|e| match e {
-            intent::JsonInputError::Invalid(issues) => AdmissionError::InvalidRequirements(issues),
-            other => AdmissionError::InvalidInput(other.to_string()),
-        })?;
-        let intent = match ready {
-            Readiness::Ready(intent) => intent,
-            Readiness::NeedsClarification(fields) => {
-                return Err(AdmissionError::NeedsClarification(fields));
-            }
-        };
-        if !matches!(
-            intent.data().blueprint,
-            BlueprintChoice::Automatic | BlueprintChoice::HubSpoke
-        ) {
-            return Err(AdmissionError::InvalidInput("unsupported blueprint".into()));
-        }
-        artifacts::validate_options(&intent, options)
-            .map_err(|e| AdmissionError::InvalidInput(e.to_string()))?;
+        let intent = resolve_generation_input(raw_intent, options)?;
         let base = match &intent.data().update {
             UpdateMode::StatelessRedesign => None,
             UpdateMode::IncrementalUpdate { base_revision, .. } => {
@@ -153,4 +136,30 @@ fn canonical_identity(value: Value) -> Value {
         Value::Array(values) => Value::Array(values.into_iter().map(canonical_identity).collect()),
         other => other,
     }
+}
+
+/// Shared AI-free readiness and supported-policy check; never generates a network.
+pub fn resolve_generation_input(
+    raw_intent: &str,
+    options: &GenerationOptions,
+) -> Result<Box<intent::ResolvedIntent>, AdmissionError> {
+    let ready = intent::parse_json(raw_intent).map_err(|e| match e {
+        intent::JsonInputError::Invalid(issues) => AdmissionError::InvalidRequirements(issues),
+        other => AdmissionError::InvalidInput(other.to_string()),
+    })?;
+    let intent = match ready {
+        Readiness::Ready(intent) => intent,
+        Readiness::NeedsClarification(fields) => {
+            return Err(AdmissionError::NeedsClarification(fields));
+        }
+    };
+    if !matches!(
+        intent.data().blueprint,
+        BlueprintChoice::Automatic | BlueprintChoice::HubSpoke
+    ) {
+        return Err(AdmissionError::InvalidInput("unsupported blueprint".into()));
+    }
+    artifacts::validate_options(&intent, options)
+        .map_err(|e| AdmissionError::InvalidInput(e.to_string()))?;
+    Ok(intent)
 }
