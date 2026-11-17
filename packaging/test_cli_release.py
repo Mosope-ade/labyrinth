@@ -5,6 +5,7 @@ import tarfile
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import cli_release as release
 
@@ -23,6 +24,17 @@ class PackagingTests(unittest.TestCase):
             release.identity("0.1.0", "a" * 40, target, "cli-v1.0.0")
         with self.assertRaises(ValueError):
             release.identity("0.1.0", "not-a-sha", target)
+
+    def test_lockfile_fingerprint_is_identical_across_checkout_line_endings(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.object(release, "ROOT", root):
+                (root / "Cargo.lock").write_bytes(b"a\r\nb\r\n")
+                windows = release.lock_hash()
+                (root / "Cargo.lock").write_bytes(b"a\nb\n")
+                self.assertEqual(windows, release.lock_hash())
+                (root / "Cargo.lock").write_bytes(b"a\nchanged\n")
+                self.assertNotEqual(windows, release.lock_hash())
 
     def test_architecture_checks_real_executable_headers(self):
         elf = bytearray(64)

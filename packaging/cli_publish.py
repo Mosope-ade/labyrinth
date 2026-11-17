@@ -188,8 +188,7 @@ def main():
             audit.get("schema_version") != "cli_dependency_audit_v1"
             or audit.get("blocking") != []
             or audit.get("revision") != args.revision
-            or audit.get("cargo_lock_sha256")
-            != package.sha((package.ROOT / "Cargo.lock").read_bytes())
+            or audit.get("cargo_lock_sha256") != package.lock_hash()
             or audit.get("targets") != sorted(package.TARGETS)
         ):
             raise ValueError("Missing, failed or mismatched CLI dependency audit")

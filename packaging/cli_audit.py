@@ -96,7 +96,7 @@ def run(directory, output, tool, revision):
     summary = {
         "schema_version": "cli_dependency_audit_v1",
         "revision": revision,
-        "cargo_lock_sha256": package.sha((package.ROOT / "Cargo.lock").read_bytes()),
+        "cargo_lock_sha256": package.lock_hash(),
         "tool": "cargo-audit 0.23.0",
         "database": report["database"],
         "targets": sorted(package.TARGETS),

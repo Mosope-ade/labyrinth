@@ -13,7 +13,9 @@ Four native jobs build/test the CLI with Rust 1.95.0 and Cargo.lock:
   Secret Service needed for real login. The D-Bus C library is vendored.
 - Windows x86-64 MSVC: Windows Server 2025 runner; static MSVC runtime build flag.
 - Intel Mac: macos-15-intel, minimum deployment target macOS 15.0.
-- Apple Silicon Mac: macos-15, aarch64, minimum deployment target macOS 15.0.
+- Apple Silicon Mac: macos-26, aarch64, minimum deployment target macOS 15.0.
+  Native runtime tests cover macOS 26 on ARM and macOS 15 on Intel; the deployment
+  target is a compatibility build setting, not proof of every older ARM OS version.
 
 Each job runs all CLI tests and strict Clippy, builds an optimized executable,
 checks executable architecture and runs the extracted package from a directory with
@@ -42,7 +44,9 @@ engine/API/worker/server-auth dependencies. Package inputs are explicit; no `.en
 credentials, worktree history, catalog data or generated topology is copied. Archive
 metadata/file ordering is normalized for identical inputs; this is not a claim of
 bit-reproducible executables across toolchains/OS images. BUILD.json records the
-source commit, target, Cargo version, lockfile hash and executable SHA-256.
+source commit, target, Cargo version, canonical-LF lockfile hash and executable
+SHA-256. Normalizing only lockfile line endings makes Windows/Unix identities
+comparable; package files/executable hashes still cover their exact bytes.
 
 An assembly job requires all four native packages from the same run/source/version.
 It rechecks provenance, architecture, complete file inventory and hashes, and emits

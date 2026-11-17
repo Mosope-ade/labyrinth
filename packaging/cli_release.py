@@ -32,6 +32,11 @@ def sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def lock_hash():
+    """Cargo.lock is text: fingerprint LF consistently across Windows/Unix checkouts."""
+    return sha((ROOT / "Cargo.lock").read_bytes().replace(b"\r\n", b"\n"))
+
+
 def identity(version, revision, target, tag=None):
     if (
         not SEMVER.fullmatch(version)
@@ -256,7 +261,7 @@ def build(binary, metadata_path, output, revision, target, tag=None):
                 "tag": tag,
                 "toolchain": "1.95.0",
                 "executable_sha256": sha(data),
-                "cargo_lock_sha256": sha((ROOT / "Cargo.lock").read_bytes()),
+                "cargo_lock_sha256": lock_hash(),
                 "project_license_included": license_path.is_file(),
             },
             indent=2,
@@ -344,6 +349,8 @@ def verify_tree(root, target, version, revision):
         revision,
     ):
         raise ValueError("Build provenance mismatch")
+    if build_info.get("cargo_lock_sha256") != lock_hash():
+        raise ValueError("Package lockfile fingerprint differs from reviewed source")
     expected_files = {
         str(p.relative_to(root)).replace(os.sep, "/")
         for p in root.rglob("*")

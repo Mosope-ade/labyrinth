@@ -40,6 +40,7 @@ def artifacts(directory, tag=None):
                     "target": target,
                     "tag": tag,
                     "executable_sha256": release.sha(data),
+                    "cargo_lock_sha256": release.lock_hash(),
                     "project_license_included": True,
                 }
             ).encode(),

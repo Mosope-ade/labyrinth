@@ -40,7 +40,7 @@ jobs:
           - runner: macos-15-intel
             target: x86_64-apple-darwin
             executable: laby
-          - runner: macos-15
+          - runner: macos-26
             target: aarch64-apple-darwin
             executable: laby
     runs-on: ${{ matrix.runner }}
