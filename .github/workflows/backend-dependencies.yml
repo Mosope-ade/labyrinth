@@ -1,0 +1,37 @@
+name: Backend dependency advisories
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '23 7 * * 1'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RUSTUP_TOOLCHAIN: 1.95.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        run: rustup toolchain install 1.95.0 --profile minimal
+      - name: Fetch checksum-pinned audit tools
+        run: python3 packaging/fetch_tools.py --directory "$RUNNER_TEMP/audit-tools"
+      - name: Validate audit tooling
+        run: |
+          "$RUNNER_TEMP/audit-tools/ruff" check packaging
+          "$RUNNER_TEMP/audit-tools/ruff" format --check packaging
+          python3 -m unittest discover -s packaging -p 'test_*.py'
+      - name: Audit actual API, worker and engine compilation
+        run: python3 packaging/backend_audit.py --output backend-audit --tool "$RUNNER_TEMP/audit-tools/cargo-audit"
+      - name: Retain compiler and advisory evidence
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: backend-dependency-evidence
+          path: backend-audit/
+          retention-days: 7
+          if-no-files-found: warn

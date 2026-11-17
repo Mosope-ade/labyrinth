@@ -73,7 +73,7 @@ async fn bad_signatures_algorithms_unknown_kids_and_malformed_tokens_reject_with
     let hmac = jsonwebtoken::encode(
         &h,
         &valid,
-        &jsonwebtoken::EncodingKey::from_secret(b"not-a-project-key"),
+        &jsonwebtoken::EncodingKey::from_secret(b"not-a-project-key").unwrap(),
     )
     .unwrap();
     assert_eq!(
@@ -166,11 +166,11 @@ fn issuer_configuration_never_uses_plaintext_credentials_queries_or_token_select
 #[tokio::test]
 async fn rs256_public_keys_verify_real_rsa_signatures() {
     use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
-    use rsa::{RsaPrivateKey, pkcs1::EncodeRsaPrivateKey, traits::PublicKeyParts};
+    use rsa::{PrivateKey, pkcs1::EncodeRsaPrivateKey, traits::PublicKeyParts};
     let source = TestIssuer::start().await;
-    let private = RsaPrivateKey::new(&mut rand_core::OsRng, 2048).unwrap();
+    let private = PrivateKey::new(&mut rand::rng(), 2048).unwrap();
     let public = private.to_public_key();
-    source.replace_keys(vec![json!({"kty":"RSA","alg":"RS256","kid":"rsa-key","use":"sig","key_ops":["verify"],"n":URL_SAFE_NO_PAD.encode(public.n().to_bytes_be()),"e":URL_SAFE_NO_PAD.encode(public.e().to_bytes_be())})]);
+    source.replace_keys(vec![json!({"kty":"RSA","alg":"RS256","kid":"rsa-key","use":"sig","key_ops":["verify"],"n":URL_SAFE_NO_PAD.encode(public.n_bytes()),"e":URL_SAFE_NO_PAD.encode(public.e_bytes())})]);
     let verifier = source.verifier().await.unwrap();
     let actor = Uuid::new_v4();
     let mut header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::RS256);
@@ -201,4 +201,22 @@ async fn concurrent_key_misses_coalesce_to_one_bounded_refresh() {
         assert_eq!(task.await.unwrap().unwrap_err(), AuthError::InvalidToken);
     }
     assert_eq!(source.hits(), 2);
+}
+
+#[tokio::test]
+async fn signed_unknown_critical_extensions_are_rejected() {
+    let source = TestIssuer::start().await;
+    let verifier = source.verifier().await.unwrap();
+    let header = serde_json::from_value(json!({
+        "alg": "ES256", "kid": source.signer.kid,
+        "crit": ["private-extension"], "private-extension": "required"
+    }))
+    .unwrap();
+    let token = source
+        .signer
+        .token_with_header(&claims(Uuid::new_v4()), &header);
+    assert_eq!(
+        verifier.verify(&token).await.unwrap_err(),
+        AuthError::InvalidToken
+    );
 }

@@ -65,3 +65,12 @@ skipped; no release tag, draft or public GitHub Release was created.
 The final four-target audit covered 165 third-party dependency versions from actual
 compiler output, with zero blocking findings and zero maintenance warnings in
 that CLI scope. The complete lockfile report remains available separately.
+
+
+## Backend advisory follow-up
+
+The original outside-CLI findings have now been assessed against separate backend
+compiler inventories. See [dependency triage](../security/dependency-triage.md) for
+patched crypto dependencies, the maintained catalog parser, inactive SQLite/MySQL
+lockfile edges and the new independent backend gate. Historical CLI acceptance above
+remains scoped to its recorded source commit; a new lockfile requires fresh native CI.

@@ -3,7 +3,7 @@ use super::{AuthConfig, JwksVerifier};
 use axum::{Json, Router, extract::State, http::StatusCode, routing::get};
 use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use jsonwebtoken::{Algorithm, EncodingKey, Header};
-use p256::{SecretKey, pkcs8::EncodePrivateKey};
+use p256::{SecretKey, elliptic_curve::Generate, pkcs8::EncodePrivateKey};
 use serde_json::{Value, json};
 use std::sync::{
     Arc, RwLock,
@@ -18,7 +18,7 @@ pub(crate) struct Signer {
 }
 impl Signer {
     pub fn new(kid: &str) -> Self {
-        let secret = SecretKey::random(&mut rand_core::OsRng);
+        let secret = SecretKey::generate_from_rng(&mut rand::rng());
         let point = secret.public_key().to_sec1_bytes();
         let jwk = json!({"kty":"EC","crv":"P-256","alg":"ES256","use":"sig","key_ops":["verify"],"kid":kid,"x":URL_SAFE_NO_PAD.encode(&point[1..33]),"y":URL_SAFE_NO_PAD.encode(&point[33..65])});
         Self {
@@ -30,7 +30,10 @@ impl Signer {
     pub fn token(&self, claims: &Value) -> String {
         let mut h = Header::new(Algorithm::ES256);
         h.kid = Some(self.kid.clone());
-        jsonwebtoken::encode(&h, claims, &self.key).unwrap()
+        self.token_with_header(claims, &h)
+    }
+    pub fn token_with_header(&self, claims: &Value, header: &Header) -> String {
+        jsonwebtoken::encode(header, claims, &self.key).unwrap()
     }
 }
 pub(crate) fn claims(subject: Uuid) -> Value {

@@ -948,3 +948,25 @@ libsqlite3-sys and rsa using actual component build/affected-operation evidence.
 A passing CLI dependency gate does not clear those findings. Live Supabase,
 credential-store, operational acceptance, end-user terms and signed distribution
 remain their separate gates.
+
+
+## Backend dependency assurance checkpoint — 2026-11-17
+
+- [x] Reviewed actual separate API/worker/engine compiler inventories and affected
+  operations for the retained crypto, RSA and SQLite advisories.
+- [x] Upgraded JWT/RustCrypto and ephemeral signing fixtures to patched stable
+  versions; retained real ES256/RS256 verification and rejection coverage.
+- [x] Replaced the archived catalog YAML dependency with maintained Rust parsing,
+  explicit budgets and unchanged pinned catalog identities.
+- [x] Added a compiler-bound API/worker/engine/maintenance audit gate, complete
+  lockfile evidence, fail-closed tooling tests and a weekly workflow definition.
+
+Local acceptance: 233 Rust tests (real PostgreSQL, all workspace features), 17 Python
+checks, formatting and strict Clippy passed. Fresh audit: 261 compiled third-party
+versions, zero security or maintenance findings in that scope. Inactive optional
+SQLite/RSA advisories and platform maintenance notices remain recorded; no blanket
+workspace-wide clean claim or advisory waiver is made. Weekly execution activates
+when the workflow reaches `main`; push/PR checks run on this branch now.
+See [triage and evidence](docs/security/dependency-triage.md). Supabase provisioning,
+live provider/native-store acceptance, backup/restore and broader backend operational
+acceptance remain separate open work. The GUI remains deferred.

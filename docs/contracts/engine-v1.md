@@ -148,7 +148,7 @@ missing values, stale identities and unknown references. This does not establish
 security audit of future services or guarantee behavior on unmodeled networks.
 
 Dependency APIs used: [Schemars](https://docs.rs/schemars/),
-[serde_yaml_ng](https://docs.rs/serde_yaml_ng/),
+[serde-saphyr](https://docs.rs/serde-saphyr/2.1.1/serde_saphyr/),
 [jsonschema](https://docs.rs/jsonschema/0.33.0/jsonschema/).
 
 ### Endpoint attachment extension
@@ -174,3 +174,11 @@ contracts. The model now admits 256 physical plus 16 logical interfaces/device,
 retaining 65,536 total interfaces, and validates canonical L2 trees and gateway
 reservations. This supersedes the earlier single total 256-interface bound to account
 explicitly for loopbacks and logical gateways. Five-pass verification is not implied.
+
+
+### Catalog parser hardening — 2026-11-17
+
+The maintained Rust parser replaces the archived libyaml dependency without changing
+the typed catalog/hash contract. Explicit parser budgets, duplicate-key rejection,
+unsupported-tag rejection and source-snippet suppression apply to catalog ingestion.
+See [dependency triage](../security/dependency-triage.md) for limits and evidence.

@@ -10,7 +10,7 @@ pub const MAX_YAML_BYTES: usize = 1_048_576;
 #[derive(Debug)]
 pub enum CatalogError {
     TooLarge,
-    Parse(serde_yaml_ng::Error),
+    Parse(serde_saphyr::Error),
     Invalid(ValidationErrors),
     Serialization(serde_json::Error),
 }
@@ -53,7 +53,26 @@ pub fn load_yaml(input: &str) -> Result<CatalogSnapshot, CatalogError> {
     if input.len() > MAX_YAML_BYTES {
         return Err(CatalogError::TooLarge);
     }
-    let bundle: CatalogBundle = serde_yaml_ng::from_str(input).map_err(CatalogError::Parse)?;
+    // Catalogs are data only: no tag extensions, external includes or interpolation.
+    // Explicit budgets bound parser work independently of the raw input byte cap.
+    let options = serde_saphyr::options! {
+        budget: serde_saphyr::budget! {
+            max_depth: 64,
+            max_documents: 1,
+            max_events: 200_000,
+            max_nodes: 100_000,
+            max_aliases: 1_024,
+            max_anchors: 1_024,
+            max_recorded_anchor_events: 100_000,
+            max_recorded_anchor_bytes: MAX_YAML_BYTES,
+            max_total_scalar_bytes: MAX_YAML_BYTES,
+        },
+        reject_unsupported_tags: true,
+        reject_tagged_field_names: true,
+        with_snippet: false,
+    };
+    let bundle: CatalogBundle =
+        serde_saphyr::from_str_with_options(input, options).map_err(CatalogError::Parse)?;
     validate::validate(&bundle).map_err(CatalogError::Invalid)?;
     let bytes = serde_json::to_vec(&bundle).map_err(CatalogError::Serialization)?;
     let version = CatalogVersion {

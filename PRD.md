@@ -859,3 +859,17 @@ The user selected proprietary licensing. The project notice reserves rights and
 is not an end-user agreement. End-user terms, signed/notarized binary distribution,
 live provider/native-store and operational acceptance remain release decisions.
 See [release runbook](docs/runbooks/cli-releases.md).
+
+
+### Backend dependency assurance — 2026-11-17
+
+Require a fresh RustSec scan paired with successful compiler evidence for supported
+API, worker/maintenance binaries and engine builds on pushes, pull requests and a
+weekly schedule. Compiled vulnerabilities, yanks, unsoundness and unmaintained
+packages fail the gate. Retain the complete lockfile report and the scoped result;
+inactive optional dependencies require recorded triage and must block if activated.
+Do not suppress advisories, filter severity, or substitute declaration metadata for
+actual compilation. Parser replacements must preserve typed catalog schema and
+canonical hashes and keep explicit resource budgets and negative-input tests.
+This requirement supplements the native CLI package audit and provider acceptance.
+See [backend dependency triage](docs/security/dependency-triage.md).

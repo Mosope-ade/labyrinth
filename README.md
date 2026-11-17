@@ -80,3 +80,6 @@ Supabase acceptance waits for provider setup; the GUI is not implemented yet.
 
 CLI distribution uses [native package CI and draft-only GitHub Releases](docs/runbooks/cli-releases.md).
 Labyrinth remains proprietary; see [LICENSE](LICENSE).
+
+Backend dependency scope, remaining inactive lockfile advisories and the recurring
+compiler-bound audit gate are documented in [dependency triage](docs/security/dependency-triage.md).

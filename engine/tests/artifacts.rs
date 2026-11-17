@@ -81,7 +81,7 @@ fn source_collection_order_does_not_change_package_and_infeasible_designs_have_n
 #[test]
 fn hard_failure_state_capacity_is_checked_before_cheap_assignment_can_win() {
     let mut bundle: catalog::CatalogBundle =
-        serde_yaml_ng::from_str(include_str!("../../tests/fixtures/catalog/blueprints.yaml"))
+        serde_saphyr::from_str(include_str!("../../tests/fixtures/catalog/blueprints.yaml"))
             .unwrap();
     let mut cheap = bundle
         .archetypes
@@ -98,7 +98,7 @@ fn hard_failure_state_capacity_is_checked_before_cheap_assignment_can_win() {
         group.shared_capacity_mbps = Some(240);
     }
     bundle.archetypes.push(cheap);
-    let c = catalog::load_yaml(&serde_yaml_ng::to_string(&bundle).unwrap()).unwrap();
+    let c = catalog::load_yaml(&serde_saphyr::to_string(&bundle).unwrap()).unwrap();
     let Readiness::Ready(i) = intent::resolve(serde_json::from_value(input()).unwrap()).unwrap()
     else {
         panic!()

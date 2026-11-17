@@ -47,6 +47,10 @@ async fn technical_storage_policies_enforce_scoped_read_write_delete_and_revocat
     let db = PgPoolOptions::new().connect(url.as_str()).await.unwrap();
     MIGRATIONS.run(&db).await.unwrap();
     sqlx::raw_sql("DO $$ BEGIN IF NOT EXISTS(SELECT FROM pg_roles WHERE rolname='authenticated') THEN CREATE ROLE authenticated NOLOGIN NOSUPERUSER NOBYPASSRLS; END IF; IF NOT EXISTS(SELECT FROM pg_roles WHERE rolname='anon') THEN CREATE ROLE anon NOLOGIN NOSUPERUSER NOBYPASSRLS; END IF; END $$; CREATE SCHEMA auth; CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$; CREATE SCHEMA storage; CREATE TABLE storage.buckets(id text PRIMARY KEY,public boolean); CREATE TABLE storage.objects(bucket_id text,name text,content text DEFAULT 'immutable',PRIMARY KEY(bucket_id,name)); GRANT USAGE ON SCHEMA storage TO authenticated; GRANT SELECT ON storage.buckets TO authenticated; GRANT SELECT,INSERT,UPDATE,DELETE ON storage.objects TO authenticated;").execute(&db).await.unwrap();
+    // Provider-owned Storage tables already have RLS enabled. Reproduce that
+    // prerequisite in the local provider double, independently of policy bootstrap.
+    sqlx::raw_sql("ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY; ALTER TABLE storage.buckets ENABLE ROW LEVEL SECURITY;")
+        .execute(&db).await.unwrap();
     sqlx::raw_sql(
         "INSERT INTO storage.buckets VALUES('engineering-packages',false),('unrelated',false)",
     )

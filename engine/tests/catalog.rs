@@ -8,7 +8,7 @@ fn bundled_catalog_is_valid_and_schema_agrees() {
     assert_eq!(snapshot.archetypes().len(), 2);
     assert_eq!(snapshot.version().semantic_version, "1.0.0");
     assert_eq!(snapshot.version().sha256.len(), 64);
-    let yaml: serde_json::Value = serde_yaml_ng::from_str(CATALOG).unwrap();
+    let yaml: serde_json::Value = serde_saphyr::from_str(CATALOG).unwrap();
     let validator = jsonschema::validator_for(catalog_schema().as_value()).unwrap();
     assert!(validator.is_valid(&yaml));
 }
@@ -72,7 +72,7 @@ fn digest_ignores_yaml_formatting_but_pins_all_catalog_content() {
 
 #[test]
 fn schema_rejects_extra_fields_and_yaml_duplicate_keys_reject() {
-    let mut value: serde_json::Value = serde_yaml_ng::from_str(CATALOG).unwrap();
+    let mut value: serde_json::Value = serde_saphyr::from_str(CATALOG).unwrap();
     value["archetypes"][0]["vendor"] = "anything".into();
     let validator = jsonschema::validator_for(catalog_schema().as_value()).unwrap();
     assert!(!validator.is_valid(&value));
@@ -124,5 +124,22 @@ fn invalid_fixture_returns_all_independent_capacity_diagnostics() {
             .issues
             .iter()
             .any(|i| i.path.ends_with("/throughput_mbps"))
+    );
+}
+
+#[test]
+fn catalog_rejects_unknown_tags_and_deep_input_without_echoing_source() {
+    let tagged = CATALOG.replacen("version: 1.0.0", "version: !untrusted private-marker", 1);
+    let error = load_yaml(&tagged).unwrap_err().to_string();
+    assert!(!error.contains("private-marker"));
+    assert!(load_yaml(&format!("{}0{}", "[".repeat(80), "]".repeat(80))).is_err());
+}
+
+#[test]
+fn parser_upgrade_preserves_the_saved_blueprint_catalog_identity() {
+    let snapshot = load_yaml(include_str!("../../tests/fixtures/catalog/blueprints.yaml")).unwrap();
+    assert_eq!(
+        snapshot.version().sha256,
+        "f337bdf91144260729922d1b62f3c88e38d417ce1397b0da8861e3158e34213b"
     );
 }

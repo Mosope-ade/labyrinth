@@ -201,7 +201,7 @@ fn adding_a_site_keeps_old_addresses_when_new_ids_sort_before_existing_sites() {
 #[test]
 fn core_mode_pins_cannot_be_relaxed_to_enable_new_session_requirements() {
     let mut bundle: catalog::CatalogBundle =
-        serde_yaml_ng::from_str(include_str!("../../tests/fixtures/catalog/blueprints.yaml"))
+        serde_saphyr::from_str(include_str!("../../tests/fixtures/catalog/blueprints.yaml"))
             .unwrap();
     let core = bundle
         .archetypes
@@ -214,7 +214,7 @@ fn core_mode_pins_cannot_be_relaxed_to_enable_new_session_requirements() {
         .features
         .retain(|f| *f != Feature::SessionSteering);
     core.operating_modes.push(steered);
-    let c = catalog::load_yaml(&serde_yaml_ng::to_string(&bundle).unwrap()).unwrap();
+    let c = catalog::load_yaml(&serde_saphyr::to_string(&bundle).unwrap()).unwrap();
     let options = GenerationOptions::default();
     let old = generate(&resolve(input()), &c, &options).unwrap();
     assert!(

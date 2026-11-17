@@ -303,7 +303,7 @@ fn physical_port_matching_matches_an_exhaustive_small_reference() {
             })
         });
         let bundle = json!({"schema_version":"catalog_v1","version":"1.0.0","archetypes":[{"id":"ports","roles":["access_switch"],"relative_cost_tier":1,"features":["switching","vlan"],"poe_budget_watts":null,"port_groups":groups,"operating_modes":[{"id":"base","features":["switching","vlan"],"throughput_mbps":10000}],"reference_hints":[]}]});
-        let c = load_yaml(&serde_yaml_ng::to_string(&bundle).unwrap()).unwrap();
+        let c = load_yaml(&serde_saphyr::to_string(&bundle).unwrap()).unwrap();
         let mut n = need();
         n.ports[0].count = 1;
         n.ports[1].count = 1;
