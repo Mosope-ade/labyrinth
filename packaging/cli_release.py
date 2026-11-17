@@ -113,7 +113,26 @@ def archive(payload, root, target):
     return output.getvalue()
 
 
-def dependencies(metadata):
+def compiler_units(path):
+    if path is None or path.stat().st_size > 8 * 1024 * 1024:
+        raise ValueError("Bounded compiler-unit evidence is required")
+    built = set()
+    finished = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        message = json.loads(line)
+        if message.get("reason") == "compiler-artifact":
+            unit = message.get("package_id")
+            if not isinstance(unit, str) or not unit:
+                raise ValueError("Invalid compiler package identity")
+            built.add(unit)
+        elif message.get("reason") == "build-finished":
+            finished.append(message.get("success"))
+    if finished != [True] or not built:
+        raise ValueError("Exactly one successful compiler build is required")
+    return built
+
+
+def dependencies(metadata, built=None):
     """Target-filtered Cargo graph; excludes dev-only nodes and implementation crates."""
     packages = {p["id"]: p for p in metadata["packages"]}
     roots = [p for p in packages.values() if p["name"] == "labyrinth-cli"]
@@ -145,6 +164,11 @@ def dependencies(metadata):
         for p in selected
     ):
         raise ValueError("CLI must not package backend implementation dependencies")
+    if built is not None:
+        declared = {p["id"] for p in selected}
+        if roots[0]["id"] not in built or not built <= declared:
+            raise ValueError("Compiler units differ from the declared CLI build graph")
+        selected = [p for p in selected if p["id"] in built]
     return roots[0], selected
 
 
@@ -208,9 +232,12 @@ def notices(selected):
     return payload
 
 
-def build(binary, metadata_path, output, revision, target, tag=None):
+def build(
+    binary, metadata_path, output, revision, target, tag=None, build_messages=None
+):
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-    cli, selected = dependencies(metadata)
+    units = compiler_units(build_messages)
+    cli, selected = dependencies(metadata, units)
     version = cli["version"]
     stem = identity(version, revision, target, tag)
     if (
@@ -260,6 +287,7 @@ def build(binary, metadata_path, output, revision, target, tag=None):
                 "target": target,
                 "tag": tag,
                 "toolchain": "1.95.0",
+                "compiler_package_count": len(units),
                 "executable_sha256": sha(data),
                 "cargo_lock_sha256": lock_hash(),
                 "project_license_included": license_path.is_file(),
@@ -435,7 +463,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
     package = sub.add_parser("build")
-    for name in ("binary", "metadata", "output"):
+    for name in ("binary", "metadata", "output", "build-messages"):
         package.add_argument(f"--{name}", type=Path, required=True)
     package.add_argument("--revision", required=True)
     package.add_argument("--target", choices=TARGETS, required=True)
@@ -455,6 +483,7 @@ def main():
                 args.revision,
                 args.target,
                 args.tag,
+                args.build_messages,
             )
         )
     else:

@@ -73,7 +73,7 @@ jobs:
           TARGET: ${{ matrix.target }}
       - name: Build optimized CLI only
         run: |
-          cargo build -p labyrinth-cli --bin laby --release --target "$TARGET" --locked
+          cargo build -p labyrinth-cli --bin laby --release --target "$TARGET" --locked --message-format=json-render-diagnostics > build-messages.jsonl
           cargo metadata --format-version 1 --filter-platform "$TARGET" --locked > cargo-metadata.json
           python -c "import json; p=json.load(open('cargo-metadata.json')); print('CLI_VERSION='+next(x['version'] for x in p['packages'] if x['name']=='labyrinth-cli'))" >> "$GITHUB_ENV"
         env:
@@ -89,7 +89,7 @@ jobs:
         run: |
           tag_args=()
           if [[ "$GITHUB_REF" == refs/tags/cli-v* ]]; then tag_args=(--tag "$GITHUB_REF_NAME"); fi
-          python packaging/cli_release.py build --binary "target/$TARGET/release/$EXECUTABLE" --metadata cargo-metadata.json --output dist --revision "$GITHUB_SHA" --target "$TARGET" "${tag_args[@]}"
+          python packaging/cli_release.py build --binary "target/$TARGET/release/$EXECUTABLE" --metadata cargo-metadata.json --build-messages build-messages.jsonl --output dist --revision "$GITHUB_SHA" --target "$TARGET" "${tag_args[@]}"
           python packaging/cli_release.py smoke --archive "dist/laby-v${CLI_VERSION}-${TARGET}.${EXTENSION}" --target "$TARGET" --version "$CLI_VERSION" --revision "$GITHUB_SHA"
         env:
           TARGET: ${{ matrix.target }}

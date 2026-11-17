@@ -1,4 +1,5 @@
 import io
+import json
 import os
 import struct
 import tarfile
@@ -35,6 +36,54 @@ class PackagingTests(unittest.TestCase):
                 self.assertEqual(windows, release.lock_hash())
                 (root / "Cargo.lock").write_bytes(b"a\nchanged\n")
                 self.assertNotEqual(windows, release.lock_hash())
+
+    def test_compiler_evidence_requires_one_successful_complete_build(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "messages.jsonl"
+            artifact = {"reason": "compiler-artifact", "package_id": "cli"}
+            for finish in (None, False, True):
+                messages = [artifact]
+                if finish is not None:
+                    messages.append({"reason": "build-finished", "success": finish})
+                path.write_text(
+                    "\n".join(json.dumps(m) for m in messages), encoding="utf-8"
+                )
+                if finish is True:
+                    self.assertEqual(release.compiler_units(path), {"cli"})
+                else:
+                    with self.assertRaises(ValueError):
+                        release.compiler_units(path)
+
+    def test_manifest_uses_compiled_units_and_rejects_unexpected_build_inputs(self):
+        packages = [
+            {
+                "id": name,
+                "name": "labyrinth-cli" if name == "cli" else name,
+                "version": "1.0.0",
+            }
+            for name in ("cli", "runtime", "inactive")
+        ]
+        metadata = {
+            "packages": packages,
+            "resolve": {
+                "nodes": [
+                    {
+                        "id": "cli",
+                        "deps": [
+                            {"pkg": name, "dep_kinds": [{"kind": None}]}
+                            for name in ("runtime", "inactive")
+                        ],
+                    },
+                    {"id": "runtime", "deps": []},
+                    {"id": "inactive", "deps": []},
+                ]
+            },
+        }
+        _, selected = release.dependencies(metadata, {"cli", "runtime"})
+        self.assertEqual({p["id"] for p in selected}, {"cli", "runtime"})
+        for invalid in ({"runtime"}, {"cli", "unknown"}):
+            with self.assertRaises(ValueError):
+                release.dependencies(metadata, invalid)
 
     def test_architecture_checks_real_executable_headers(self):
         elf = bytearray(64)

@@ -39,7 +39,9 @@ limits appropriate to the project's zero-budget policy. No billing settings chan
 - Dependency license texts, Rust standard-library copyright/licenses, and the exact
   vendored D-Bus source/COPYING for Linux.
 
-The target-filtered Cargo dependency closure excludes dev-only edges and rejects
+The target-filtered Cargo dependency closure is intersected with successful compiler
+artifact messages. This excludes inactive optional dependencies and dev-only edges,
+includes compiled normal/build units, and rejects
 engine/API/worker/server-auth dependencies. Package inputs are explicit; no `.env`,
 credentials, worktree history, catalog data or generated topology is copied. Archive
 metadata/file ordering is normalized for identical inputs; this is not a claim of
@@ -133,11 +135,12 @@ python3 -m unittest discover -s packaging -p 'test_*.py' -v
 python3 packaging/fetch_tools.py --directory .local/cli-validation-tools
 .local/cli-validation-tools/ruff check packaging
 .local/cli-validation-tools/ruff format --check packaging
-cargo +1.95.0 build -p labyrinth-cli --bin laby --release --locked
+cargo +1.95.0 build -p labyrinth-cli --bin laby --release --locked --message-format=json-render-diagnostics > .local/cli-build-messages.jsonl
 cargo +1.95.0 metadata --format-version 1 --filter-platform x86_64-unknown-linux-gnu --locked > .local/cli-metadata.json
 ```
 
-Run the builder with that metadata, executable, a new output directory, exact target
+Run the builder with that metadata, --build-messages .local/cli-build-messages.jsonl,
+executable, a new output directory, exact target
 and the source's full commit SHA; then run its smoke subcommand. Use a clean reviewed
 checkout for release evidence; dirty local previews are diagnostic only. Windows
 builds require RUSTFLAGS `-C target-feature=+crt-static`; Mac release builds require
