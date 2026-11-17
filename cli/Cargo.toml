@@ -4,7 +4,29 @@ version.workspace = true
 edition.workspace = true
 authors.workspace = true
 publish.workspace = true
-description = "Hosted laby client boundary"
+description = "Hosted laby client"
 
 [lints]
 workspace = true
+
+[[bin]]
+name = "laby"
+path = "src/main.rs"
+
+[dependencies]
+axum = "0.8"
+base64 = "0.22"
+clap = { version = "4.5", features = ["derive", "env"] }
+directories = "6"
+keyring = { version = "=3.6.3", features = ["apple-native", "windows-native", "sync-secret-service", "crypto-rust", "vendored"] }
+rand_core = { version = "0.6", features = ["getrandom"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+thiserror = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "sync", "time", "signal"] }
+uuid = { version = "1", features = ["serde"] }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }

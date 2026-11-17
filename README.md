@@ -36,8 +36,7 @@ acceptance, product CLI, optional AI clarification, GUI and admin UI remain unfi
 - `infra/`: deployment/local service definitions follow ADR 0003; no hosted services provisioned.
 - `docs/`: architecture decisions and contract documentation.
 
-API and worker have runnable entrypoints and Docker packaging. The CLI remains a
-library scaffold; its future executable will be named `laby`.
+API and worker have runnable entrypoints and Docker packaging. The source-built CLI executable is `laby`; see [CLI usage](cli/README.md).
 Engine integration tests belong in `engine/tests/`; shared fixtures live in
 `tests/fixtures/`. The engine must not depend on infrastructure or either client.
 
@@ -72,4 +71,8 @@ The core itself requires no AI key, HTTP, database or services.
 Hosted API now includes SQLx migrations, atomic PostgreSQL/pgmq admission,
 Supabase asymmetric token verification and authenticated Axum submission/status.
 See [API setup and tests](api/README.md). Provider provisioning and live acceptance,
-CLI/browser login and GUI delivery remain unfinished.
+Live CLI/browser-provider acceptance and GUI delivery remain unfinished.
+
+The source-built [laby CLI](cli/README.md) now supports magic-link PKCE login,
+secure refresh/logout and explicit identity/workspace/project commands. Live
+Supabase acceptance waits for provider setup; the GUI is not implemented yet.

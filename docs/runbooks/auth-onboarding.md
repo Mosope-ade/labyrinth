@@ -13,7 +13,8 @@
    securely, exchange the returned code through Supabase and use the access token
    for resource API calls. They own refresh/logout through Supabase. Do not send
    verifier, refresh token, callback tokens or emails to application logging.
-   Those client implementations remain pending; this backend change creates no UI.
+   The CLI implementation is documented in [CLI usage](../../cli/README.md);
+   the GUI client remains pending. No backend auth proxy or CORS change is added.
 4. Apply migrations 0009 and 0010 using the migration owner. Configure
    LABYRINTH_TENANT_MAX_PROJECTS=50 and LABYRINTH_ONBOARDING_MAX_ACTIVE_JOBS=2 on the API.
    The existing separate runtime login remains limited to labyrinth_api.

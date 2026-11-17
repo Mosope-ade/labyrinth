@@ -887,3 +887,18 @@ The provider SQL is an explicit bootstrap after migration 0016, not migration 00
 Live account/RLS acceptance waits for the user to prepare Supabase using the guide.
 CLI/browser PKCE client work remains next; no GUI work starts early. No hosted
 resources, paid plans, real technical accounts or emails were created automatically.
+
+## Hosted CLI login checkpoint — 2026-11-17
+
+- [x] Replaced CLI scaffold with `laby`, independent from engine/API implementation.
+- [x] Human email magic-link S256 PKCE, bounded one-use loopback callback, request
+  correlation, safe browser completion and cancellation/deadline handling.
+- [x] OS credential-store refresh persistence, profile-scoped advisory lock, refresh
+  rotation before API use, subject continuity and explicit local-session logout.
+- [x] Identity, explicit personal onboarding, tenant/project reads and idempotent
+  project creation commands; no implicit workspace creation or plaintext fallback.
+
+See [CLI contract](docs/contracts/cli-v1.md) and [usage](cli/README.md). Provider
+resources remain deferred to the user. Local HTTP/credential-adapter tests do not
+claim live Supabase/native desktop acceptance. Structured generation, downloads,
+complete pagination and release packaging remain subsequent client slices.

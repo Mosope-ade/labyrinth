@@ -3,7 +3,7 @@
 Start with **Phase A**, then complete Phase B. You can prepare them independently
 and tell me when they are done.
 Do not send database passwords, secret keys, tokens or connection strings in chat.
-No frontend or browser-login CLI is available yet. The offline Docker engine demo
+No frontend is available yet. The source-built CLI now supports browser PKCE login; see [CLI usage](cli/README.md). The offline Docker engine demo
 works now without Supabase: see [Docker guide](docs/runbooks/docker-local.md).
 
 ## Phase A: project, database, Auth and private bucket
@@ -56,8 +56,9 @@ curl --fail https://PROJECT_REF.supabase.co/auth/v1/.well-known/jwks.json
 
 The response must contain public signing keys. Never paste a private signing key
 into application config. Human sign-in will use email magic links with PKCE.
-Exact CLI/browser callback URLs will be added with the login client; do not add
-wildcard redirects or invent a callback merely to make a test pass. Built-in SMTP
+For the CLI, configure `http://127.0.0.1:54327/callback?state=*` as described in
+[CLI usage](cli/README.md); the wildcard covers only correlation query data, with
+fixed loopback host/port/path. Do not use wildcard hosted browser redirect origins. Built-in SMTP
 has provider restrictions; verify allowed test recipients before expecting emails.
 Production SMTP and real login/refresh/logout tests remain later acceptance work.
 
@@ -286,7 +287,8 @@ or broad policy to work around a failed scope check.
 **Tell me when A/B are prepared** (without secrets). Then we will finish real human
 PKCE login, explicit onboarding, catalog promotion, structured generation and
 manifest-verified downloads, plus revocation/retention/backup restore acceptance.
-The CLI/browser login client remains next on the agenda. No AI key is required.
+The CLI login client is available from source; actual provider acceptance remains
+pending your setup. Full engineering workflow commands follow. No AI key is required.
 
 These are Labyrinth app projects, not Supabase infrastructure projects. Never use
 “Delete Supabase project” to test Labyrinth's owner-confirmed deletion endpoint.

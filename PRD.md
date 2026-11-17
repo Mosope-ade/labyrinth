@@ -818,3 +818,17 @@ application migrations through 0016, provider-specific bootstrap and live accept
 The removed root .env.example is not required; component templates remain. CLI/login
 and hosted JWT/Storage/backup acceptance remain unfinished; local checks cannot
 substitute for those provider operations.
+
+### CLI authentication implementation checkpoint — 2026-11-17
+
+The installed `laby` client uses the existing Supabase magic-link decision with
+S256 PKCE and a same-computer IPv4 loopback browser callback. Credentials persist
+only in native OS stores; verifier/state/access tokens stay in memory. Refresh
+rotation and local logout are serialized per API/Auth profile. Login does not
+provision an application workspace; explicit `onboard` does. Identity/tenant/project
+commands exercise the same backend authorization as the future GUI. No engine is
+embedded, no plaintext token fallback or service-account login is provided.
+
+[CLI contract](docs/contracts/cli-v1.md) defines command and failure boundaries.
+Live provider, native-store and cross-platform release acceptance remain distinct
+from deterministic local HTTP tests. Full engineering workflow commands follow.
