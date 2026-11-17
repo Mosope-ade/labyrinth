@@ -2,39 +2,105 @@
 target/
 **/*.rs.bk
 
-# Frontend dependencies, builds and caches
+# Web dependencies, builds and package-manager caches
 node_modules/
 dist/
+/build/
 .vite/
 .turbo/
+.npm/
+.pnpm-store/
+.eslintcache
+.stylelintcache
 *.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python validation tools, environments and caches
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cargo/registry/
+.cargo/git/
+.cargo/bin/
+.tox/
+.nox/
 
 # Local environment and credentials (keep documented templates)
 .env
 .env.*
+*.env
 !.env.example
 !.env.*.example
 *.pem
 *.key
 *.p12
 *.pfx
+*.p8
+.ssh/
+.cargo/credentials
+.cargo/credentials.toml
+.codex/auth.json
+.aws/
+.direnv/
+/.secrets/
+/secrets/
+.claude/settings.local.json
+.codex/sessions/
+.codex/log/
+.codex/logs/
+.codex/history.jsonl
 
-# Local runtime data, logs and temporary files
+# Local runtime data, logs, database files and backups
 /.local/
 /tmp/
 /logs/
+/backups/
 *.log
+*.log.[0-9]*
 *.pid
+*.pid.lock
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
 *.sqlite
-*.sqlite3
+*.sqlite-journal
 *.sqlite-wal
 *.sqlite-shm
+*.sqlite3
+*.sqlite3-journal
 *.sqlite3-wal
 *.sqlite3-shm
+*.dump
 
-# Test and coverage outputs
-/coverage/
-/llvm-cov/
+# Generated release inputs, audit reports and downloaded validation binaries
+/cargo-metadata.json
+/build-messages.jsonl
+/audit/
+/tools/cargo-audit
+/tools/ruff
+
+# Local infrastructure state and secret variable files
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfvars
+*.tfvars.json
+
+# Test and coverage outputs (at any component depth)
+coverage/
+llvm-cov/
+htmlcov/
+.coverage
+.coverage.*
 *.profraw
 *.profdata
 playwright-report/
@@ -48,11 +114,14 @@ test-results/
 *~
 .DS_Store
 Thumbs.db
+Desktop.ini
 
-# Existing local-only notes
+# Existing local-only notes and private working references
 CLAUDE.md
 NEWPLAN.md
+/labyrinth_notes.md
+/algorithm_and_mathematical_models.txt
 
-# Deployment validation tooling caches
-__pycache__/
-*.pyc
+# Keep source, fixtures, schemas, migrations, release/validation lockfiles,
+# other project instructions and public .crt certificates versionable. Do not blanket-ignore
+# JSON/YAML/SQL, archives, all *.lock files, or agent configuration directories.
