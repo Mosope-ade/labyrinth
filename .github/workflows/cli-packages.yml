@@ -23,7 +23,7 @@ permissions:
   contents: read
 concurrency:
   group: cli-packages-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/cli-v') }}
 jobs:
   package:
     name: Native CLI (${{ matrix.target }})

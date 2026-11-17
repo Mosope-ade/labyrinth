@@ -130,12 +130,14 @@ impl Client {
     }
 }
 fn save(out: &Path, files: &BTreeMap<String, Vec<u8>>) -> Result<(), Error> {
-    let mut dir = std::fs::DirBuilder::new();
+    let dir = std::fs::DirBuilder::new();
     #[cfg(unix)]
-    {
+    let dir = {
         use std::os::unix::fs::DirBuilderExt;
+        let mut dir = dir;
         dir.mode(0o700);
-    }
+        dir
+    };
     dir.create(out).map_err(|_| Error::Output)?;
     let result = (|| {
         for (name, bytes) in files

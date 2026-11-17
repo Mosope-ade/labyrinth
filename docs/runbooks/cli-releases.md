@@ -51,6 +51,7 @@ corruption; they do not authenticate a compromised release source or replace sig
 
 ## Preview build
 
+Superseded branch/PR package runs are cancelled; release-tag runs are preserved.
 Relevant CLI/Cargo/packaging changes run `.github/workflows/cli-packages.yml` on push
 and pull request. `workflow_dispatch` also allows an explicit nonpublishing build.
 Download **cli-release-set** from the successful workflow's artifacts. This is a
