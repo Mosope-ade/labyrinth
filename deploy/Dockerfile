@@ -6,6 +6,7 @@ COPY engine ./engine
 COPY api ./api
 COPY worker ./worker
 COPY cli ./cli
+COPY service-auth ./service-auth
 COPY tests/fixtures ./tests/fixtures
 RUN cargo build --release --locked -p labyrinth-api -p labyrinth-worker --bins \
     && cargo build --release --locked -p labyrinth-api --example migrate --example prune_audit \

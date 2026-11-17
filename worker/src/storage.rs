@@ -6,10 +6,30 @@ pub struct Storage {
     client: Client,
     base: Url,
     bucket: String,
-    token: String,
+    auth: labyrinth_service_auth::Credentials,
 }
 impl Storage {
-    pub fn new(origin: &str, bucket: String, token: String) -> Result<Self> {
+    pub fn new(origin: &str, bucket: String, api_key: String, token: String) -> Result<Self> {
+        let auth = labyrinth_service_auth::Credentials::fixed(api_key, token)
+            .map_err(|_| Error::Invalid)?;
+        Self::build(origin, bucket, auth)
+    }
+    pub fn technical(
+        origin: &str,
+        bucket: String,
+        api_key: String,
+        email: String,
+        password: String,
+    ) -> Result<Self> {
+        let auth = labyrinth_service_auth::Credentials::password(origin, api_key, email, password)
+            .map_err(|_| Error::Invalid)?;
+        Self::build(origin, bucket, auth)
+    }
+    fn build(
+        origin: &str,
+        bucket: String,
+        auth: labyrinth_service_auth::Credentials,
+    ) -> Result<Self> {
         let mut base = Url::parse(origin).map_err(|_| Error::Invalid)?;
         if base.scheme() != "https"
             || base.host_str().is_none()
@@ -22,7 +42,6 @@ impl Storage {
             || !bucket
                 .bytes()
                 .all(|b| b.is_ascii_alphanumeric() || b == b'-')
-            || token.is_empty()
         {
             return Err(Error::Invalid);
         }
@@ -37,7 +56,7 @@ impl Storage {
             client,
             base,
             bucket,
-            token,
+            auth,
         })
     }
     pub async fn verify_private(&self) -> Result<()> {
@@ -46,11 +65,8 @@ impl Storage {
             .join(&format!("../bucket/{}", self.bucket))
             .map_err(|_| Error::Invalid)?;
         let mut response = self
-            .client
-            .get(url)
-            .bearer_auth(&self.token)
-            .header("apikey", &self.token)
-            .send()
+            .auth
+            .send(self.client.get(url))
             .await
             .map_err(|_| Error::Storage)?;
         if !response.status().is_success() {
@@ -88,14 +104,14 @@ impl Storage {
     }
     pub async fn put(&self, key: &str, bytes: &[u8]) -> Result<()> {
         let response = self
-            .client
-            .post(self.url(key)?)
-            .bearer_auth(&self.token)
-            .header("apikey", &self.token)
-            .header("Content-Type", "application/json")
-            .header("x-upsert", "false")
-            .body(bytes.to_vec())
-            .send()
+            .auth
+            .send(
+                self.client
+                    .post(self.url(key)?)
+                    .header("Content-Type", "application/json")
+                    .header("x-upsert", "false")
+                    .body(bytes.to_vec()),
+            )
             .await
             .map_err(|_| Error::Storage)?;
         if response.status().is_success() {
@@ -107,15 +123,14 @@ impl Storage {
     pub async fn get(&self, key: &str, limit: usize) -> Result<Vec<u8>> {
         self.url(key)?;
         let mut response = self
-            .client
-            .get(
-                self.base
-                    .join(&format!("authenticated/{}/{key}", self.bucket))
-                    .map_err(|_| Error::Invalid)?,
+            .auth
+            .send(
+                self.client.get(
+                    self.base
+                        .join(&format!("authenticated/{}/{key}", self.bucket))
+                        .map_err(|_| Error::Invalid)?,
+                ),
             )
-            .bearer_auth(&self.token)
-            .header("apikey", &self.token)
-            .send()
             .await
             .map_err(|_| Error::Storage)?;
         if !response.status().is_success()
@@ -171,9 +186,23 @@ mod tests {
             "https://example.com/other",
             "https://example.com/?secret=x",
         ] {
-            assert!(Storage::new(origin, "private".into(), "test".into()).is_err())
+            assert!(
+                Storage::new(
+                    origin,
+                    "private".into(),
+                    "public-test-key".into(),
+                    "test".into()
+                )
+                .is_err()
+            )
         }
-        let s = Storage::new("https://example.com", "private".into(), "test".into()).unwrap();
+        let s = Storage::new(
+            "https://example.com",
+            "private".into(),
+            "public-test-key".into(),
+            "test".into(),
+        )
+        .unwrap();
         for key in [
             "attempts/../secret",
             "/attempts/a",
@@ -191,7 +220,7 @@ mod tests {
             bytes: Bytes,
         ) -> StatusCode {
             assert_eq!(headers["authorization"], "Bearer test-only");
-            assert_eq!(headers["apikey"], "test-only");
+            assert_eq!(headers["apikey"], "public-test-key");
             assert_eq!(headers["x-upsert"], "false");
             *state.lock().unwrap() = bytes.to_vec();
             StatusCode::OK
@@ -218,8 +247,13 @@ mod tests {
             .with_state(state);
         let task = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
         // Test-only local transport; production constructor still requires HTTPS.
-        let mut s =
-            Storage::new("https://example.com", "private".into(), "test-only".into()).unwrap();
+        let mut s = Storage::new(
+            "https://example.com",
+            "private".into(),
+            "public-test-key".into(),
+            "test-only".into(),
+        )
+        .unwrap();
         s.base = Url::parse(&format!("http://{addr}/storage/v1/object/")).unwrap();
         s.verify_private().await.unwrap();
         s.put("attempts/a/file.json", b"payload").await.unwrap();
@@ -246,16 +280,16 @@ impl crate::cleanup::OrphanStore for Storage {
         }
         let url = self.base.join(&self.bucket).map_err(|_| Error::Invalid)?;
         let response = self
-            .client
-            .delete(url)
-            .bearer_auth(&self.token)
-            .header("apikey", &self.token)
-            .header("Content-Type", "application/json")
-            .body(
-                serde_json::to_vec(&serde_json::json!({"prefixes":keys}))
-                    .map_err(|_| Error::Invalid)?,
+            .auth
+            .send(
+                self.client
+                    .delete(url)
+                    .header("Content-Type", "application/json")
+                    .body(
+                        serde_json::to_vec(&serde_json::json!({"prefixes":keys}))
+                            .map_err(|_| Error::Invalid)?,
+                    ),
             )
-            .send()
             .await
             .map_err(|_| Error::Storage)?;
         if response.status().is_success() {
@@ -292,7 +326,7 @@ mod cleanup_tests {
                     let requests = requests.clone();
                     async move {
                         assert_eq!(headers["authorization"], "Bearer test-only");
-                        assert_eq!(headers["apikey"], "test-only");
+                        assert_eq!(headers["apikey"], "public-test-key");
                         let keys = body["prefixes"].as_array().unwrap();
                         assert_eq!(keys.len(), 13);
                         assert!(
@@ -309,8 +343,13 @@ mod cleanup_tests {
             ),
         );
         let task = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
-        let mut storage =
-            Storage::new("https://example.com", "private".into(), "test-only".into()).unwrap();
+        let mut storage = Storage::new(
+            "https://example.com",
+            "private".into(),
+            "public-test-key".into(),
+            "test-only".into(),
+        )
+        .unwrap();
         storage.base = Url::parse(&format!("http://{addr}/storage/v1/object/")).unwrap();
         let keys: Vec<_> = crate::package::NAMES
             .iter()

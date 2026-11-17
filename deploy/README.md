@@ -3,6 +3,9 @@
 This directory is preparation, not a completed hosted deployment. No paid resource,
 provider role, secret, bucket or migration is created automatically by validation.
 
+For a step-by-step local run and what to do afterward, see the
+[Docker guide](../docs/runbooks/docker-local.md) and [Supabase setup](../SUPABASE_SETUP.md).
+
 ## Container
 
 Build from the repository root:

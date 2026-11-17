@@ -127,6 +127,7 @@ async fn hosted_generation_upload_failure_recovery_publication_and_incremental_u
         storage: Storage::new(
             "https://unused.example",
             "private".into(),
+            "public-test-key".into(),
             "test-only".into(),
         )
         .unwrap(),

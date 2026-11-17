@@ -802,3 +802,19 @@ and mandatory audit metadata. Recovery privileges are isolated from ordinary aud
 maintenance. Backup deletion policy, latest-ledger reconciliation and actual provider
 expiry/restore acceptance are described in the retention contract and runbook; live
 backup automation/provider durability have not been provisioned or verified here.
+
+### Scoped server Storage sessions and operator onboarding
+
+The user approved separate server-only technical Auth identities for the API reader
+and worker, with automatic session refresh. Human sign-in remains magic-link PKCE;
+no human-password application API is introduced. Runtime Storage gateway keys are
+publishable, not service-role/secret bypass credentials. Access/refresh tokens stay
+in memory; backend secrets hold only technical login credentials. Scope is enforced
+through private identity registration and reviewed provider RLS, with immediate
+registry revocation, operator audits, no overwrite and policy-bound deletion.
+
+Root Supabase setup and Docker runbooks distinguish offline engine demonstration,
+application migrations through 0016, provider-specific bootstrap and live acceptance.
+The removed root .env.example is not required; component templates remain. CLI/login
+and hosted JWT/Storage/backup acceptance remain unfinished; local checks cannot
+substitute for those provider operations.

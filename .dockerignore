@@ -10,6 +10,8 @@
 !worker/**
 !cli/
 !cli/**
+!service-auth/
+!service-auth/**
 !tests/
 !tests/fixtures/
 !tests/fixtures/**

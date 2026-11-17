@@ -91,3 +91,12 @@ content after seven days; orphan cleanup still cannot. Unsuccessful payload/evid
 retention is 30 days. See [retention V1](retention-v1.md) and
 [acceptance](../testing/retention.md). These rules supersede earlier deferred-policy
 notes; backup configuration and live restore acceptance remain separate.
+
+## Technical Storage identity extension — 2026-11-17
+
+Replace LABYRINTH_STORAGE_TOKEN with explicit API_KEY, EMAIL and PASSWORD settings.
+The worker obtains/refreshes a dedicated technical session with a publishable key;
+no raw user token or service-role key is a runtime fallback. Provider RLS additionally
+limits live writes and policy-eligible cleanup. The engine child receives no identity
+credentials. Apply the reviewed provider bootstrap after application migration 0016;
+see [setup](../../SUPABASE_SETUP.md). No additional application migration is required.

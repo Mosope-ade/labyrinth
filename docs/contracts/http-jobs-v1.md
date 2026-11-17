@@ -138,8 +138,9 @@ artifact_unavailable. Request capacity remains held while the response body is
 consumed or dropped, protecting against slow-client memory amplification.
 
 Configure the optional complete group LABYRINTH_ARTIFACT_STORAGE_ORIGIN,
-LABYRINTH_ARTIFACT_STORAGE_BUCKET and LABYRINTH_ARTIFACT_STORAGE_TOKEN to enable
-transport. The origin must be HTTPS with no credentials/path/query/fragment;
+LABYRINTH_ARTIFACT_STORAGE_BUCKET, LABYRINTH_ARTIFACT_STORAGE_API_KEY,
+LABYRINTH_ARTIFACT_STORAGE_EMAIL and LABYRINTH_ARTIFACT_STORAGE_PASSWORD to enable
+transport. These are the dedicated reader identity, not the human caller session. The origin must be HTTPS with no credentials/path/query/fragment;
 redirects are forbidden. Partial configuration fails startup. An absent group allows
 admission/status service to run, with authorized downloads returning 503. Provision
 a private bucket and a server-only read credential separately; never use a public
@@ -169,3 +170,14 @@ Deployment readiness: unauthenticated GET /health/ready returns 204 only while t
 restricted API database role, required schema functions and trusted signing keys are
 usable; otherwise 503 with no operational body. It shares bounded capacity/deadlines
 and cache-coalesced key refresh. GET /health/live remains process-only liveness.
+
+## Storage identity configuration extension — 2026-11-17
+
+Artifact transport now requires the complete optional group ORIGIN, BUCKET, API_KEY,
+EMAIL and PASSWORD under LABYRINTH_ARTIFACT_STORAGE_*. All absent disables downloads;
+a partial group or old TOKEN setting fails configuration. API_KEY must be a modern
+publishable key; the reader's dedicated technical account obtains/refreshes its own
+bearer session. This is separate from the caller's human PKCE access token.
+See [Supabase setup](../../SUPABASE_SETUP.md) and
+[session contract](../../service-auth/README.md). Missing/failed Storage identity
+access remains a bounded infrastructure failure, not evidence of infeasibility.

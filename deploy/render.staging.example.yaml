@@ -39,6 +39,10 @@ services:
     sync: false
   - key: LABYRINTH_ARTIFACT_STORAGE_BUCKET
     value: engineering-packages
-  - key: LABYRINTH_ARTIFACT_STORAGE_TOKEN
+  - key: LABYRINTH_ARTIFACT_STORAGE_API_KEY
+    sync: false
+  - key: LABYRINTH_ARTIFACT_STORAGE_EMAIL
+    sync: false
+  - key: LABYRINTH_ARTIFACT_STORAGE_PASSWORD
     sync: false
   healthCheckPath: /health/ready

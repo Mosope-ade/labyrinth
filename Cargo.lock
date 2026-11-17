@@ -1075,6 +1075,7 @@ dependencies = [
  "jsonschema",
  "jsonwebtoken",
  "labyrinth-engine",
+ "labyrinth-service-auth",
  "p256",
  "rand_core 0.6.4",
  "reqwest",
@@ -1112,12 +1113,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "labyrinth-service-auth"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "labyrinth-worker"
 version = "0.1.0"
 dependencies = [
  "axum",
  "labyrinth-api",
  "labyrinth-engine",
+ "labyrinth-service-auth",
  "reqwest",
  "serde",
  "serde_json",

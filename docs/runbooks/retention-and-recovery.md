@@ -80,3 +80,10 @@ Use a separate unprivileged recovery LOGIN granted only `labyrinth_recovery` for
 ledger export/reconciliation. Routine `labyrinth_maintenance` audit pruning cannot
 reconcile lifecycle state. Keep recovery credentials offline and out of API, worker
 and routine maintenance environments; verify role memberships before the drill.
+
+When scoped technical identities are configured, exclude active storage_principals
+data from content restoration (or restore those rows disabled before commit).
+Re-provision/review technical identities and credentials in the isolated target
+before enabling Storage or workers; never resurrect an old enabled flag from a
+backup after an identity was revoked. Apply the reviewed provider RLS bootstrap and
+verify negative scope checks alongside lifecycle-ledger reconciliation.

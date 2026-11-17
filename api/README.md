@@ -81,7 +81,7 @@ production configuration still need deployment acceptance.
 
 Authenticated cancellation and published JSON artifact downloads are specified in
 [HTTP V1](../docs/contracts/http-jobs-v1.md). Optional private download transport
-settings are listed in [.env.example](.env.example); configure all three together.
+settings are listed in [.env.example](.env.example); configure all five together.
 Authorization comes from current database membership, never from client object keys.
 See [cancellation/download acceptance](../docs/testing/cancellation-downloads.md).
 
@@ -99,7 +99,8 @@ and explicit POST /v1/onboarding/personal-workspace. The example policy configur
 active jobs and 50 projects for a new personal tenant. Read
 [provider setup](../docs/runbooks/auth-onboarding.md) before hosted rollout. Supabase
 and the GUI/CLI auth clients own magic-link/PKCE login, refresh and logout; this API
-does not proxy or persist refresh credentials.
+does not proxy or persist human refresh credentials. Server Storage sessions use
+separate technical identities; see [setup](../SUPABASE_SETUP.md).
 
 [Attempt diagnostics](../docs/contracts/job-diagnostics-v1.md) expose safe attempt
 history and retry scheduling. No raw worker errors or storage/runtime keys are returned.

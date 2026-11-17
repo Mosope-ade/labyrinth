@@ -1,5 +1,5 @@
 [workspace]
-members = ["engine", "api", "worker", "cli"]
+members = ["engine", "api", "worker", "cli", "service-auth"]
 resolver = "3"
 
 [workspace.package]

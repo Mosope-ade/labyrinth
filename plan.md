@@ -870,3 +870,20 @@ See [ADR 0009](docs/decisions/0009-retention-and-project-lifecycle.md),
 and [tests](docs/testing/retention.md). Live backup scheduling, independent ledger
 durability, provider expiry and hosted restore drills remain deployment acceptance
 work; no hosted resources or backups were provisioned by this change.
+
+## Docker onboarding and Storage identity checkpoint — 2026-11-17
+
+- [x] Removed unused root environment template; retained component placeholders.
+- [x] Docker runbook: offline verified generation/unpack, full service setup, migration
+  sequence, post-start workflow, shutdown and troubleshooting.
+- [x] Root Supabase guide for the user's deferred free-project preparation.
+- [x] User-approved dedicated reader/worker identities: shared server-only session
+  login/refresh, bounded/redacted failures, clock/suspend and revoked-token recovery.
+- [x] Reviewed provider-specific RLS bootstrap and operator-audited enable/revoke
+  registry; live writes/eligible cleanup only, no service-key bypass or overwrites.
+- [x] Local 210-test acceptance plus guide shell checks and component lint gates.
+
+The provider SQL is an explicit bootstrap after migration 0016, not migration 0017.
+Live account/RLS acceptance waits for the user to prepare Supabase using the guide.
+CLI/browser PKCE client work remains next; no GUI work starts early. No hosted
+resources, paid plans, real technical accounts or emails were created automatically.

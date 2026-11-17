@@ -20,6 +20,9 @@ pub struct Config {
 }
 impl Config {
     pub fn from_env() -> Result<Self> {
+        if std::env::var_os("LABYRINTH_STORAGE_TOKEN").is_some() {
+            return Err(Error::Invalid);
+        }
         let get = |n: &str| std::env::var(n).map_err(|_| Error::Invalid);
         let num = |n: &str| get(n)?.parse::<u64>().map_err(|_| Error::Invalid);
         let limits = Limits {
@@ -55,10 +58,12 @@ impl Config {
             prlimit,
             engine_executable: std::env::current_exe()?,
             database_url: get("LABYRINTH_DATABASE_URL")?,
-            storage: Storage::new(
+            storage: Storage::technical(
                 &get("LABYRINTH_STORAGE_ORIGIN")?,
                 get("LABYRINTH_STORAGE_BUCKET")?,
-                get("LABYRINTH_STORAGE_TOKEN")?,
+                get("LABYRINTH_STORAGE_API_KEY")?,
+                get("LABYRINTH_STORAGE_EMAIL")?,
+                get("LABYRINTH_STORAGE_PASSWORD")?,
             )?,
         })
     }
