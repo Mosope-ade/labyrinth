@@ -19,7 +19,7 @@ explicitly. It is not the product boundary.
 See [core contracts](docs/contracts/core-v1.md) for APIs, the 13-file package,
 assumptions and supported limits. Hosted API/worker execution, authentication,
 storage adapters and retention are implemented and locally/CI tested. Live provider
-acceptance, product CLI, optional AI clarification, GUI and admin UI remain unfinished.
+acceptance, CLI distribution, optional AI clarification, GUI and admin UI remain unfinished.
 
 ## Source map
 
@@ -74,5 +74,6 @@ See [API setup and tests](api/README.md). Provider provisioning and live accepta
 Live CLI/browser-provider acceptance and GUI delivery remain unfinished.
 
 The source-built [laby CLI](cli/README.md) now supports magic-link PKCE login,
-secure refresh/logout and explicit identity/workspace/project commands. Live
+secure refresh/logout, explicit onboarding, structured generation, job/revision
+inspection and verified package downloads. Live
 Supabase acceptance waits for provider setup; the GUI is not implemented yet.

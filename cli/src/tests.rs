@@ -171,7 +171,7 @@ async fn callback_timeout_releases_port_when_dropped() {
 }
 
 #[derive(Default)]
-struct MemoryVault {
+pub(super) struct MemoryVault {
     value: std::sync::Mutex<Option<String>>,
     fail_save: bool,
 }
@@ -192,10 +192,11 @@ impl Vault for MemoryVault {
     }
 }
 #[derive(Clone)]
-struct Provider {
+pub(super) struct Provider {
+    redirect: std::sync::Arc<std::sync::Mutex<Option<String>>>,
     challenge: std::sync::Arc<std::sync::Mutex<Option<String>>>,
     used: std::sync::Arc<std::sync::atomic::AtomicBool>,
-    events: std::sync::Arc<std::sync::Mutex<Vec<String>>>,
+    pub(super) events: std::sync::Arc<std::sync::Mutex<Vec<String>>>,
     reply: std::sync::Arc<std::sync::Mutex<serde_json::Value>>,
     token_status: std::sync::Arc<std::sync::atomic::AtomicU16>,
     api_status: std::sync::Arc<std::sync::atomic::AtomicU16>,
@@ -203,7 +204,7 @@ struct Provider {
 fn session() -> serde_json::Value {
     serde_json::json!({"access_token":"access-secret","refresh_token":"rotated-secret","token_type":"bearer","expires_in":3600,"user":{"id":"11111111-1111-4111-8111-111111111111","is_anonymous":false,"email_confirmed_at":"2026-11-17T00:00:00Z"}})
 }
-async fn provider() -> (Client, Provider, tokio::task::JoinHandle<()>) {
+pub(super) async fn provider() -> (Client, Provider, tokio::task::JoinHandle<()>) {
     use axum::{
         Json, Router,
         extract::{Query, State},
@@ -215,6 +216,7 @@ async fn provider() -> (Client, Provider, tokio::task::JoinHandle<()>) {
         atomic::{AtomicBool, AtomicU16, Ordering},
     };
     let p = Provider {
+        redirect: Arc::new(Mutex::new(None)),
         challenge: Arc::new(Mutex::new(None)),
         used: Arc::new(AtomicBool::new(false)),
         events: Arc::new(Mutex::new(vec![])),
@@ -233,6 +235,7 @@ async fn provider() -> (Client, Provider, tokio::task::JoinHandle<()>) {
         assert_eq!(body["code_challenge_method"], "s256");
         assert_eq!(body["create_user"], true);
         assert!(q["redirect_to"].starts_with("http://127.0.0.1:"));
+        *p.redirect.lock().unwrap() = Some(q["redirect_to"].clone());
         *p.challenge.lock().unwrap() = Some(body["code_challenge"].as_str().unwrap().to_owned());
         p.events.lock().unwrap().push("otp".to_string());
         StatusCode::OK
@@ -350,7 +353,7 @@ async fn login_exchange_refresh_api_and_local_logout_preserve_boundaries() {
     task.abort();
 }
 
-async fn signed_in(client: &Client, vault: &dyn Vault) {
+pub(super) async fn signed_in(client: &Client, vault: &dyn Vault) {
     let callback = Callback::bind(0).await.unwrap();
     client.begin("user@example.com", &callback).await.unwrap();
     client
@@ -573,5 +576,32 @@ async fn anonymous_unconfirmed_and_bad_token_fields_never_reach_api() {
         );
     }
     assert!(!p.events.lock().unwrap().contains(&"api".into()));
+    task.abort();
+}
+
+#[tokio::test]
+async fn login_waits_for_real_loopback_callback_then_saves_exchange() {
+    let (client, p, task) = provider().await;
+    let vault = MemoryVault::default();
+    let callback = async {
+        let url = tokio::time::timeout(std::time::Duration::from_secs(2), async {
+            loop {
+                let redirect = p.redirect.lock().unwrap().clone();
+                if let Some(url) = redirect {
+                    break url;
+                }
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .unwrap();
+        let response = reqwest::get(format!("{url}&code=valid-code"))
+            .await
+            .unwrap();
+        assert!(response.status().is_success());
+    };
+    let (result, ()) = tokio::join!(client.login("user@example.com", 0, &vault), callback);
+    result.unwrap();
+    assert!(vault.load().unwrap().is_some());
     task.abort();
 }

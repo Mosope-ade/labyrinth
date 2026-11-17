@@ -902,3 +902,17 @@ See [CLI contract](docs/contracts/cli-v1.md) and [usage](cli/README.md). Provide
 resources remain deferred to the user. Local HTTP/credential-adapter tests do not
 claim live Supabase/native desktop acceptance. Structured generation, downloads,
 complete pagination and release packaging remain subsequent client slices.
+
+## Structured CLI workflow checkpoint — 2026-11-17
+
+- [x] Added bounded, byte-preserving validation/admission envelopes and explicit
+  idempotency keys; no duplicate-field normalization or automatic mutation replay.
+- [x] Catalog/job/revision discovery with explicit pagination, status/cancellation,
+  attempt diagnostics and revision inventory inspection.
+- [x] Complete authenticated package download: exact inventory, revision/manifest
+  identity and all file sizes/hashes checked before new private output is created.
+  Existing outputs are preserved; this is integrity checking, not re-verification.
+
+This completes the initial AI-free CLI command surface and supersedes the prior
+pending engineering-command note. Real Supabase/native desktop acceptance, GitHub
+release packaging, optional AI and backend operational acceptance remain open.

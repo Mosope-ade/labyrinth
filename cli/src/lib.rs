@@ -2,11 +2,14 @@
 mod auth;
 mod callback;
 mod config;
+mod download;
 mod store;
+mod workflow;
 pub use auth::Client;
 pub use callback::Callback;
 pub use config::Config;
 pub use store::{Keychain, Vault};
+pub use workflow::read_input;
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum Error {
@@ -32,9 +35,21 @@ pub enum Error {
     LoginExpired,
     #[error("API rejected the request (HTTP {0}); check current access and input")]
     Api(u16),
+    #[error("API rejected the request (HTTP {status}): {report}")]
+    ApiDetails { status: u16, report: String },
     #[error("Remote logout was not confirmed; local credentials were erased")]
     LogoutIncomplete,
+    #[error("Cannot save output; choose a new private directory and check permissions")]
+    Output,
+    #[error("Package inventory, size or SHA-256 verification failed; no package saved")]
+    Integrity,
 }
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod download_tests;
+
+#[cfg(test)]
+mod workflow_tests;

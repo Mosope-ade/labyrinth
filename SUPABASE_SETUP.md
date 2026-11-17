@@ -288,7 +288,7 @@ or broad policy to work around a failed scope check.
 PKCE login, explicit onboarding, catalog promotion, structured generation and
 manifest-verified downloads, plus revocation/retention/backup restore acceptance.
 The CLI login client is available from source; actual provider acceptance remains
-pending your setup. Full engineering workflow commands follow. No AI key is required.
+pending your setup. Structured engineering commands are available from source; see CLI usage. No AI key is required.
 
 These are Labyrinth app projects, not Supabase infrastructure projects. Never use
 “Delete Supabase project” to test Labyrinth's owner-confirmed deletion endpoint.

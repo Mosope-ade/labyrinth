@@ -174,8 +174,8 @@ The worker has no public port. Exposing the API only on host loopback is intenti
 ## 5. What to do after startup
 
 1. Complete real Supabase magic-link/PKCE login in an authorized client. The public
-   Auth key is not a bearer access token. Browser login in the product CLI is still
-   being built; do not use the service-role key as a user token.
+   Auth key is not a bearer access token. Use the source-built [laby CLI](../../cli/README.md); do not use the service-role
+   key as a user token.
 2. Call `GET /v1/me`, then explicitly `POST {}` to
    `/v1/onboarding/personal-workspace`; save tenant_id. Signing in creates no workspace.
 3. Create a project with `POST /v1/tenants/{tenant}/projects`, JSON `{"name":"First design"}` and

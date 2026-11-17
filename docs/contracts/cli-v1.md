@@ -39,8 +39,8 @@ JWTs may survive until expiry; application authorization still applies.
 
 Request/body/time bounds and safe fixed errors apply throughout. Mutations are
 never automatically retried. Preserve the idempotency key when an outcome is
-unknown. Provider CAPTCHA, remote/SSH browser handoff, scripted credentials, GUI,
-full generation/download commands and release packaging are separate slices.
+unknown. Provider CAPTCHA, remote/SSH browser handoff, scripted credentials, GUI
+and release packaging are separate slices.
 
 Native tests use loopback provider/API doubles and an injected in-memory credential
 store; they do not prove actual keychain integration, SMTP, redirect allowlists or
@@ -51,3 +51,24 @@ References: [Auth REST schema](https://github.com/supabase/auth/blob/master/open
 [PKCE](https://supabase.com/docs/guides/auth/sessions/pkce-flow),
 [redirect matching](https://supabase.com/docs/guides/auth/redirect-urls),
 [keyring 3.6.3](https://docs.rs/keyring/3.6.3/).
+
+## Structured workflow extension — 2026-11-17
+
+Implemented `catalogs`, `validate TENANT INPUT`, `generate TENANT PROJECT INPUT
+--idempotency-key KEY`, `jobs`, `status`, `cancel`, `attempts`, `revisions`, `inspect`
+and `download TENANT PROJECT REVISION OUTPUT`. List commands accept limit 1–100 and
+an explicit after cursor; status is a single persisted read, with manual polling.
+Structured input uses existing HTTP envelopes and is transmitted byte-for-byte,
+with a 2 MiB limit. Admission and generation remain distinct. No AI or engine is
+embedded. API error code/details are bounded JSON, escaped for terminal output;
+provider Auth replies remain redacted. Mutations are not automatically retried.
+
+Downloads authenticate once per invocation, reauthorize through each resource API
+request, and verify the exact fixed inventory, revision/manifest hash, file hashes
+and sizes (32 MiB aggregate). No disk output until all checks pass. Save only to a
+new directory, no overwrite; Unix modes 0700/0600, inherited Windows ACLs. Write the
+manifest last; a crash may leave a partial directory requiring explicit inspection.
+This checks transport integrity against authenticated server metadata; it does not
+independently repeat engine verification. Full AI-free workflow commands supersede
+the earlier deferred-command statement. Optional AI, release packaging and real
+provider/native-store acceptance remain open.

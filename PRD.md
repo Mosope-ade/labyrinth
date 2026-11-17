@@ -832,3 +832,14 @@ embedded, no plaintext token fallback or service-account login is provided.
 [CLI contract](docs/contracts/cli-v1.md) defines command and failure boundaries.
 Live provider, native-store and cross-platform release acceptance remain distinct
 from deterministic local HTTP tests. Full engineering workflow commands follow.
+
+### Structured CLI workflow checkpoint — 2026-11-17
+
+The CLI now supports the AI-free hosted engineering path: catalog discovery,
+structured validation/admission, explicit pagination, job reads/cancellation,
+attempt diagnostics, revision inspection and complete manifest-verified downloads.
+Admission is not a verified result; failure status is not a proof of infeasibility.
+Raw request bytes and stable idempotency keys preserve backend contract semantics.
+Downloads verify transport integrity against authorized revision metadata before
+creating new output; they do not re-run the engine. Optional AI and distribution,
+plus live provider/native-store acceptance, remain subsequent work.

@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 pub struct Client {
     pub(crate) config: Config,
-    http: reqwest::Client,
+    pub(crate) http: reqwest::Client,
 }
 #[derive(Deserialize)]
 struct User {
@@ -196,6 +196,21 @@ impl Client {
         vault.clear()?;
         remote.map_err(|_| Error::LogoutIncomplete)
     }
+    pub(crate) async fn access(&self, vault: &dyn Vault) -> Result<String, Error> {
+        Ok(self.refresh(vault).await?.access_token)
+    }
+    pub(crate) fn check_key(key: Option<&str>) -> Result<(), Error> {
+        if key.is_some_and(|v| {
+            v.is_empty()
+                || v.len() > 128
+                || !v
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b"-_.:".contains(&b))
+        }) {
+            return Err(Error::InvalidInput);
+        }
+        Ok(())
+    }
     /// Typed command paths are assembled by the binary; this boundary rejects cross-origin URLs.
     pub async fn api(
         &self,
@@ -205,32 +220,8 @@ impl Client {
         body: Option<Value>,
         idempotency: Option<&str>,
     ) -> Result<Value, Error> {
-        if !path
-            .bytes()
-            .all(|b| b.is_ascii_alphanumeric() || b"/-_".contains(&b))
-            || !path.starts_with("v1/")
-            || path.contains(['?', '#', '\\'])
-            || path.split('/').any(|p| p == ".." || p == ".")
-        {
-            return Err(Error::InvalidInput);
-        }
-        if idempotency.is_some_and(|v| {
-            v.is_empty()
-                || v.len() > 128
-                || !v
-                    .bytes()
-                    .all(|b| b.is_ascii_alphanumeric() || b"-_.:".contains(&b))
-        }) {
-            return Err(Error::InvalidInput);
-        }
-        let url = self
-            .config
-            .api
-            .join(path)
-            .map_err(|_| Error::InvalidInput)?;
-        if url.origin() != self.config.api.origin() {
-            return Err(Error::InvalidInput);
-        }
+        let url = self.resource_url(path)?;
+        Self::check_key(idempotency)?;
         let session = self.refresh(vault).await?;
         let mut request = self
             .http
@@ -242,15 +233,10 @@ impl Client {
         if let Some(key) = idempotency {
             request = request.header("idempotency-key", key);
         }
-        let response = request.send().await.map_err(|_| Error::Unavailable)?;
-        if !response.status().is_success() {
-            return Err(Error::Api(response.status().as_u16()));
-        }
-        let bytes = bounded(response, 2 * 1024 * 1024).await?;
-        serde_json::from_slice(&bytes).map_err(|_| Error::InvalidResponse)
+        self.json_response(request).await
     }
 }
-async fn bounded(mut response: reqwest::Response, max: usize) -> Result<Vec<u8>, Error> {
+pub(crate) async fn bounded(mut response: reqwest::Response, max: usize) -> Result<Vec<u8>, Error> {
     let mut bytes = Vec::new();
     while let Some(chunk) = response.chunk().await.map_err(|_| Error::Unavailable)? {
         if bytes.len() + chunk.len() > max {
