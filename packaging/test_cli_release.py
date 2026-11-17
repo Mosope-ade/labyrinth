@@ -1,4 +1,5 @@
 import io
+import os
 import struct
 import tarfile
 import tempfile
@@ -62,7 +63,10 @@ class PackagingTests(unittest.TestCase):
                 root = release.unpack(file, Path(directory) / "output")
                 self.assertEqual((root / "README.md").read_bytes(), b"usage")
                 if "windows" not in target:
-                    self.assertEqual((root / "laby").stat().st_mode & 0o777, 0o755)
+                    with tarfile.open(file, "r:gz") as bundle:
+                        self.assertEqual(bundle.getmember("package/laby").mode, 0o755)
+                    if os.name != "nt":
+                        self.assertEqual((root / "laby").stat().st_mode & 0o777, 0o755)
                 with self.assertRaises(ValueError):
                     release.unpack(file, Path(directory) / "output")
 

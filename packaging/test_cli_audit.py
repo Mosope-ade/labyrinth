@@ -43,6 +43,23 @@ class AuditTests(unittest.TestCase):
         self.assertEqual([p["name"] for p in review], ["cli-maintenance"])
         self.assertEqual([p["name"] for p in outside], ["backend-only"])
 
+    def test_advisory_ignores_and_filters_cannot_hide_release_findings(self):
+        for settings in (
+            {"ignore": ["RUSTSEC-test"]},
+            {"severity": "high"},
+            {"target_os": ["linux"]},
+        ):
+            with self.assertRaises(ValueError):
+                cli_audit.classify(
+                    {
+                        "database": {},
+                        "vulnerabilities": {"list": []},
+                        "warnings": {},
+                        "settings": settings,
+                    },
+                    set(),
+                )
+
     def test_missing_report_data_cannot_produce_clean_result(self):
         with self.assertRaises(ValueError):
             cli_audit.classify({}, set())

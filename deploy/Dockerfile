@@ -1,7 +1,7 @@
 # Base identities verified against Docker Hub's official library tag metadata.
 FROM rust:1.95.0-bookworm@sha256:6258907abe69656e41cd992e0b705cdcfabcbbe3db374f92ed2d47121282d4a1 AS build
 WORKDIR /src
-COPY Cargo.toml Cargo.lock ./
+COPY Cargo.toml Cargo.lock LICENSE ./
 COPY engine ./engine
 COPY api ./api
 COPY worker ./worker
@@ -22,6 +22,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates libgcc-s1 util-linux \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
+COPY LICENSE /app/LICENSE
 COPY --from=build /src/target/release/labyrinth-api /app/labyrinth-api
 COPY --from=build /src/target/release/labyrinth-worker /app/labyrinth-worker
 COPY --from=build /src/target/release/examples/migrate /app/labyrinth-migrate

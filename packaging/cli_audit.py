@@ -34,6 +34,16 @@ def classify(report, dependencies):
         or "warnings" not in report
     ):
         raise ValueError("Incomplete audit report")
+    settings = report.get("settings", {})
+    if (
+        settings.get("ignore")
+        or settings.get("target_arch")
+        or settings.get("target_os")
+        or settings.get("severity") is not None
+    ):
+        raise ValueError(
+            "Audit advisory ignores, target filters or severity thresholds are forbidden"
+        )
     findings = [("vulnerability", v) for v in report["vulnerabilities"].get("list", [])]
     findings.extend(
         (kind, v) for kind, values in report["warnings"].items() for v in values
