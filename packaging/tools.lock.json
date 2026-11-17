@@ -1,0 +1,12 @@
+{
+  "cargo-audit": {
+    "version": "0.23.0",
+    "url": "https://github.com/rustsec/rustsec/releases/download/cargo-audit/v0.23.0/cargo-audit-x86_64-unknown-linux-musl-v0.23.0.tgz",
+    "sha256": "4f01c74ed84b2dffd0b1d37012a62cdf2a92c96e25bdf8eec7fcc0d4d3eb7811"
+  },
+  "ruff": {
+    "version": "0.17.5",
+    "url": "https://github.com/astral-sh/ruff/releases/download/0.17.5/ruff-x86_64-unknown-linux-musl.tar.gz",
+    "sha256": "dc94b7e225b8910fb6f55298ada32d00e356dbd195a5ffb647847f388cb54f84"
+  }
+}

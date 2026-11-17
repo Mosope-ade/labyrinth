@@ -5,6 +5,7 @@ edition.workspace = true
 authors.workspace = true
 publish.workspace = true
 description = "Hosted laby client"
+license-file = "../LICENSE"
 
 [lints]
 workspace = true

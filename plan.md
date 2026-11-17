@@ -916,3 +916,20 @@ complete pagination and release packaging remain subsequent client slices.
 This completes the initial AI-free CLI command surface and supersedes the prior
 pending engineering-command note. Real Supabase/native desktop acceptance, GitHub
 release packaging, optional AI and backend operational acceptance remain open.
+
+## CLI distribution implementation — 2026-11-17
+
+- [x] User selected proprietary licensing; recorded project rights separately from
+  bundled third-party notices. Public distribution still requires end-user terms.
+- [x] Native four-target package builds, extracted-binary smoke tests, normalized
+  archive layout, source/version/lockfile/executable provenance and SHA-256 inventory.
+- [x] Full-set verification, scoped dependency-audit gate and pinned validation tools;
+  read-only builds, bounded artifact retention and tag-only draft prereleases.
+- [x] Existing drafts/published versions and moved tags fail closed; no automatic
+  release publication, tag creation, asset replacement or privileged installer.
+
+See [release runbook](docs/runbooks/cli-releases.md) and [CLI changelog](cli/CHANGELOG.md).
+Native CI acceptance is recorded separately from local Linux smoke. Live Supabase,
+native credential-store, signed distribution/end-user terms and broader backend
+operational acceptance remain open. Lockfile findings outside CLI scope must be
+triaged independently; CLI packaging does not certify workspace-wide security.

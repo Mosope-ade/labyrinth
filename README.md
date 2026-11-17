@@ -77,3 +77,6 @@ The source-built [laby CLI](cli/README.md) now supports magic-link PKCE login,
 secure refresh/logout, explicit onboarding, structured generation, job/revision
 inspection and verified package downloads. Live
 Supabase acceptance waits for provider setup; the GUI is not implemented yet.
+
+CLI distribution uses [native package CI and draft-only GitHub Releases](docs/runbooks/cli-releases.md).
+Labyrinth remains proprietary; see [LICENSE](LICENSE).

@@ -1,0 +1,194 @@
+name: CLI packages
+on:
+  push:
+    branches: ['**']
+    tags: ['cli-v*']
+    paths:
+      - 'cli/**'
+      - 'packaging/**'
+      - 'Cargo.*'
+      - 'LICENSE'
+      - '.github/workflows/cli-packages.yml'
+      - 'docs/runbooks/cli-releases.md'
+  pull_request:
+    paths:
+      - 'cli/**'
+      - 'packaging/**'
+      - 'Cargo.*'
+      - 'LICENSE'
+      - '.github/workflows/cli-packages.yml'
+      - 'docs/runbooks/cli-releases.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: cli-packages-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  package:
+    name: Native CLI (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            executable: laby
+          - runner: windows-2025
+            target: x86_64-pc-windows-msvc
+            executable: laby.exe
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+            executable: laby
+          - runner: macos-15
+            target: aarch64-apple-darwin
+            executable: laby
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    env:
+      RUSTUP_TOOLCHAIN: 1.95.0
+      MACOSX_DEPLOYMENT_TARGET: '15.0'
+      RUSTFLAGS: ${{ matrix.target == 'x86_64-pc-windows-msvc' && '-C target-feature=+crt-static' || '' }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.12'
+      - name: Install pinned native Rust
+        run: rustup toolchain install 1.95.0 --profile minimal --component clippy --component rustfmt --target "$TARGET"
+        env:
+          TARGET: ${{ matrix.target }}
+      - name: Packaging unit tests
+        run: python -m unittest discover -s packaging -p 'test_*.py' -v
+      - name: Native CLI lint and tests
+        run: |
+          cargo clippy -p labyrinth-cli --all-targets --locked -- -D warnings
+          cargo test -p labyrinth-cli --locked
+      - name: Build optimized CLI only
+        run: |
+          cargo build -p labyrinth-cli --bin laby --release --target "$TARGET" --locked
+          cargo metadata --format-version 1 --filter-platform "$TARGET" --locked > cargo-metadata.json
+          python -c "import json; p=json.load(open('cargo-metadata.json')); print('CLI_VERSION='+next(x['version'] for x in p['packages'] if x['name']=='labyrinth-cli'))" >> "$GITHUB_ENV"
+        env:
+          TARGET: ${{ matrix.target }}
+      - name: Ad-hoc sign Mac executable
+        if: runner.os == 'macOS'
+        run: |
+          codesign --force --sign - --timestamp=none "target/$TARGET/release/laby"
+          codesign --verify --strict "target/$TARGET/release/laby"
+        env:
+          TARGET: ${{ matrix.target }}
+      - name: Build and smoke extracted native archive
+        run: |
+          tag_args=()
+          if [[ "$GITHUB_REF" == refs/tags/cli-v* ]]; then tag_args=(--tag "$GITHUB_REF_NAME"); fi
+          python packaging/cli_release.py build --binary "target/$TARGET/release/$EXECUTABLE" --metadata cargo-metadata.json --output dist --revision "$GITHUB_SHA" --target "$TARGET" "${tag_args[@]}"
+          python packaging/cli_release.py smoke --archive "dist/laby-v${CLI_VERSION}-${TARGET}.${EXTENSION}" --target "$TARGET" --version "$CLI_VERSION" --revision "$GITHUB_SHA"
+        env:
+          TARGET: ${{ matrix.target }}
+          EXECUTABLE: ${{ matrix.executable }}
+          EXTENSION: ${{ runner.os == 'Windows' && 'zip' || 'tar.gz' }}
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: cli-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 1
+  assemble:
+    name: Verify release set
+    needs: package
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    env:
+      RUSTUP_TOOLCHAIN: 1.95.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
+        with:
+          pattern: cli-*
+          merge-multiple: true
+          path: dist
+      - name: Verify complete set and write checksums
+        shell: bash
+        run: |
+          version=$(python -c "import tomllib; print(tomllib.load(open('Cargo.toml','rb'))['workspace']['package']['version'])")
+          tag_args=()
+          if [[ "$GITHUB_REF" == refs/tags/cli-v* ]]; then tag_args=(--tag "$GITHUB_REF_NAME"); fi
+          python packaging/cli_publish.py --directory dist --version "$version" --revision "$GITHUB_SHA" "${tag_args[@]}"
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: cli-release-set
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 7
+  audit:
+    name: CLI dependency audit
+    needs: assemble
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
+        with:
+          name: cli-release-set
+          path: dist
+      - name: Verify pinned validation tools and Python quality gates
+        run: |
+          python packaging/fetch_tools.py --directory tools
+          tools/ruff check packaging
+          tools/ruff format --check packaging
+      - name: Audit exact CLI dependency union
+        run: python packaging/cli_audit.py --directory dist --output audit --tool tools/cargo-audit --revision "$GITHUB_SHA"
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        if: always()
+        with:
+          name: cli-security-report
+          path: audit/*
+          if-no-files-found: error
+          retention-days: 7
+  draft:
+    name: Create new draft prerelease
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/cli-v')
+    needs: [assemble, audit]
+    permissions:
+      contents: write
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
+        with:
+          name: cli-release-set
+          path: dist
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3
+        with:
+          name: cli-security-report
+          path: audit
+      - name: Reverify and create draft only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          rm dist/SHA256SUMS dist/release-index.json
+          version=$(python -c "import tomllib; print(tomllib.load(open('Cargo.toml','rb'))['workspace']['package']['version'])")
+          python packaging/cli_publish.py --directory dist --version "$version" --revision "$GITHUB_SHA" --tag "$GITHUB_REF_NAME" --repository "$GITHUB_REPOSITORY" --audit-summary audit/dependency-audit.json --publish-draft

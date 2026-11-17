@@ -843,3 +843,19 @@ Raw request bytes and stable idempotency keys preserve backend contract semantic
 Downloads verify transport integrity against authorized revision metadata before
 creating new output; they do not re-run the engine. Optional AI and distribution,
 plus live provider/native-store acceptance, remain subsequent work.
+
+### CLI distribution requirements — 2026-11-17
+
+Ship separate native CLI archives for Linux x86-64 GNU, Windows x86-64 MSVC, and
+Intel/Apple Silicon Mac. Require native tests and extracted-executable checks,
+version/tag agreement, complete archive checksums and source/target/lockfile identity.
+Bundle dependency/Rust/native-library notices; no runtime secrets or local generator.
+A scoped audit of all four package dependency closures gates draft creation, with
+out-of-scope workspace findings retained for separate review. Releases are prepared
+as new drafts/prereleases only; existing releases, mismatched source, moved tags and
+partial asset sets reject. Publication is a separate deliberate operator action.
+
+The user selected proprietary licensing. The project notice reserves rights and
+is not an end-user agreement. End-user terms, signed/notarized binary distribution,
+live provider/native-store and operational acceptance remain release decisions.
+See [release runbook](docs/runbooks/cli-releases.md).

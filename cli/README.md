@@ -17,7 +17,8 @@ Linux builds vendor libdbus for the credential adapter; a running, unlocked desk
 Secret Service (e.g. GNOME Keyring/KWallet with Secret Service enabled) is required
 at runtime. macOS uses Keychain; Windows uses Credential Manager. No plaintext
 credential fallback exists. Headless/SSH browser authentication is not supported
-by this slice. GitHub binary packaging is a later release task.
+by this slice. GitHub binary packaging is implemented; see [release/install guide](../docs/runbooks/cli-releases.md) for
+native targets, checksums, CI previews and draft-only releases.
 
 ## Configure and sign in
 
@@ -167,3 +168,6 @@ can leave an incomplete directory; choose a new directory for retry and inspect 
 old one before removing it. No existing output is overwritten or recursively erased.
 Transport/hash verification does not re-run the engineering verifier or create an
 independent proof of the package's claims.
+
+Labyrinth is proprietary; see [LICENSE](../LICENSE). Public distribution requires
+separate end-user terms. Package tests do not grant an open-source license.
