@@ -933,3 +933,18 @@ Native CI acceptance is recorded separately from local Linux smoke. Live Supabas
 native credential-store, signed distribution/end-user terms and broader backend
 operational acceptance remain open. Lockfile findings outside CLI scope must be
 triaged independently; CLI packaging does not certify workspace-wide security.
+
+## CLI packaging assurance follow-up — 2026-11-17
+
+Native CI validates the real archives and compiler-bound dependency inventory; see
+[packaging acceptance](docs/testing/cli-packaging.md) and
+[ADR 0011](docs/decisions/0011-native-cli-release-artifacts.md). Windows portability
+and cross-platform lock identity defects were corrected without suppressing checks.
+Free macOS 15 ARM provisioning failures prompted a documented move to the supported
+macOS 26 ARM pool; the deployment target stays 15.0.
+
+Next security work: triage the retained non-CLI lockfile advisories for crypto-bigint,
+libsqlite3-sys and rsa using actual component build/affected-operation evidence.
+A passing CLI dependency gate does not clear those findings. Live Supabase,
+credential-store, operational acceptance, end-user terms and signed distribution
+remain their separate gates.
