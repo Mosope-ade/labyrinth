@@ -873,3 +873,19 @@ actual compilation. Parser replacements must preserve typed catalog schema and
 canonical hashes and keep explicit resource budgets and negative-input tests.
 This requirement supplements the native CLI package audit and provider acceptance.
 See [backend dependency triage](docs/security/dependency-triage.md).
+
+
+### Optional AI foundation checkpoint — 2026-11-18
+
+The backend now has a fixture-tested in-memory proposal/review contract for FR-01
+and FR-14. Untrusted output cannot assert approval/provenance/verification; engine
+readiness is projected to clarification or ready-for-review. Exact-context/content
+confirmation yields reviewed requirements only, with normal admission still required.
+No live provider, AI HTTP endpoint, durable AI history or assessment is implemented.
+Provider/model, external sharing and retry/retention policies remain user decisions;
+AI-free generation is unchanged. See [AI contract](docs/contracts/ai-v1.md).
+
+The [frontend screen-and-flow brief](docs/product/frontend-workspace-v1.md) maps the
+agreed workspace/admin requirements into navigation and states. It is design
+preparation, not visual-design approval or frontend implementation. Backend-first
+acceptance gates remain in force.

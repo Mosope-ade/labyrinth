@@ -970,3 +970,28 @@ when the workflow reaches `main`; push/PR checks run on this branch now.
 See [triage and evidence](docs/security/dependency-triage.md). Supabase provisioning,
 live provider/native-store acceptance, backup/restore and broader backend operational
 acceptance remain separate open work. The GUI remains deferred.
+
+
+## Optional AI foundation and frontend design preparation — 2026-11-18
+
+- [x] Added a provider-independent, bounded in-memory proposal/review contract and
+  JSON Schema exports. Typed intent parsing rejects duplicate fields before generic
+  JSON normalization. Assumptions and configured provider metadata stay separate
+  from engine provenance.
+- [x] Projected readiness to clarification or `ready_for_review`, with visible
+  engine defaults and no unconfirmed `ResolvedIntent` handed out by the boundary.
+  Confirmation binds exact content, prompt digest, actor/tenant/project/head/catalog;
+  it preserves review identity and does not admit or generate anything.
+- [x] Added adversarial fixtures, schema synchronization and redacted Debug checks.
+  Full acceptance: 249 workspace Rust tests passed with all features and real local
+  PostgreSQL; zero failed/ignored. Strict Clippy and formatting passed.
+- [x] Turned frontend/admin requirements into a concrete
+  [screen-and-flow brief](docs/product/frontend-workspace-v1.md). This is design
+  preparation; visual wireframes/tokens/device artwork and GUI implementation remain.
+
+See [AI boundary](docs/contracts/ai-v1.md). This is not a live intent parser or an
+assessment service. No provider SDK/call, persisted AI conversation, AI HTTP route or
+frontend code was added. Provider/model and explicit data/retry policies are awaiting
+user decisions before live integration. Generation options need a separately bound
+review in any future hosted confirm-and-admit path. Supabase/live provider acceptance
+remains separate; no existing structured generation path depends on AI availability.

@@ -83,3 +83,7 @@ Labyrinth remains proprietary; see [LICENSE](LICENSE).
 
 Backend dependency scope, remaining inactive lockfile advisories and the recurring
 compiler-bound audit gate are documented in [dependency triage](docs/security/dependency-triage.md).
+
+Optional AI [proposal contracts](docs/contracts/ai-v1.md) are fixture-tested library
+foundations only; there is no live AI endpoint yet. Frontend design preparation is
+captured in the [workspace screen-and-flow brief](docs/product/frontend-workspace-v1.md).
