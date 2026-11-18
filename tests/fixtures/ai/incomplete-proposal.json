@@ -1,0 +1,8 @@
+{
+  "schema_version": "ai_proposal_v1",
+  "intent": {
+    "schema_version": "intent_v1",
+    "name": "Incomplete branch requirements"
+  },
+  "assumptions": []
+}

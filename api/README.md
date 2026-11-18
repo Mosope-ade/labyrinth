@@ -1,9 +1,11 @@
 # Hosted API application boundary
 
-Implemented: repository-owned SQLx migrations, PostgreSQL/pgmq admission, Supabase
-asymmetric JWT verification, authenticated Axum submission/status routes and a runnable
-server. Signup/provisioning, worker claim/execution and artifact publication/download
-endpoints remain pending. See the [HTTP contract](../docs/contracts/http-jobs-v1.md).
+Implemented: SQLx migrations, PostgreSQL/pgmq admission, Supabase asymmetric JWT
+verification, explicit onboarding/projects, authenticated jobs/revisions/downloads,
+retention and admin operations. The separate worker handles fenced execution and
+artifact publication. Hosted provider acceptance remains pending. See the
+[HTTP contract](../docs/contracts/http-jobs-v1.md) and current checkpoints in
+[plan.md](../plan.md).
 
 `jobs::PreparedAdmission::new` validates structured intent and options using the core,
 normalizes a versioned request identity and preserves defaults/provenance.
@@ -112,3 +114,24 @@ select an admitted catalog hash, validate/clarify intent and recover project job
 registry. See [the runbook](../docs/runbooks/admin-operations.md) for migration preflight,
 role maintenance and separate audit retention credentials. Global admin is never a
 substitute for private tenant membership.
+
+
+## Optional AI proposal foundation
+
+`ai::ReviewedProposal` validates provider-output fixtures, exposes clarification or
+ready-for-review status and engine defaults, and requires exact candidate/context
+confirmation before returning a reviewed input. It has no provider I/O, HTTP route,
+persistence or automatic job admission. The existing structured workflow is unchanged.
+Read [AI contracts and limits](../docs/contracts/ai-v1.md). Provider/model, live-call
+policies and hosted review lifecycle require separate decisions and implementation.
+
+Export the library schemas from the repository root:
+
+```sh
+cargo run --locked -p labyrinth-api --example export_ai_schemas -- proposal
+cargo run --locked -p labyrinth-api --example export_ai_schemas -- confirmation
+```
+
+Checked-in exports live under `schemas/ai-*-v1.schema.json`; fixture and schema tests
+run with `cargo test --locked -p labyrinth-api --test ai_proposals --test ai_schemas`.
+These schemas do not advertise a live AI HTTP operation.

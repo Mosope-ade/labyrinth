@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Confirmation",
+  "description": "Acknowledgement of an exact reviewed proposal, never an auth capability.",
+  "type": "object",
+  "properties": {
+    "proposal_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "ai_confirmation_v1"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "proposal_sha256"
+  ]
+}
