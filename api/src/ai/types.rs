@@ -38,6 +38,8 @@ pub struct ReviewContext {
 pub struct ProviderMetadata {
     pub(super) provider: String,
     pub(super) model: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(super) profile: Option<String>,
 }
 /// Acknowledgement of an exact reviewed proposal, never an auth capability.
 #[derive(Debug, Deserialize, JsonSchema)]

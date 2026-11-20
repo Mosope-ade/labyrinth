@@ -85,7 +85,7 @@ No billing activation or spending is authorized by this decision.
   same-model retry or a model switch, never both.
   Provider pricing/cost is displayed as unavailable when not reliably known; token
   counts and estimated spend must name their provider/model/pricing provenance.
-- Permit **at most one automatic retry** only for a verified before-dispatch connect
+- For same-model resubmission, permit **at most one automatic retry** only for a verified before-dispatch connect
   failure, documented rejection before processing, or a certified provider's actual
   idempotency guarantee. A 429/503 status by itself does not prove no processing.
   Respect `Retry-After`, the original deadline and remaining call/token budget;
@@ -94,6 +94,8 @@ No billing activation or spending is authorized by this decision.
   blanket 5xx response, invalid JSON or failed semantic validation. A manual retry
   is an explicit new user action and warns when prior processing/cost is unknown.
   No automatic model-based "repair" loop turns invalid output into extra calls.
+  A completed structured availability rejection may instead trigger the approved
+  alternate-model policy below; this does not establish zero processing or cost.
 - **Approved routing behavior:** when the current model is unavailable or a switch
   is otherwise required, the backend automatically chooses a configured, certified
   alternate inside the approved Gemini provider family. No per-switch user approval
@@ -134,3 +136,19 @@ define session authorization/storage schemas, deletion/restore fencing, adapter
 limits and tests. Only the provider-family and notified automatic-fallback choices
 are approved here; the other recommendations remain proposed. The current
 provider-independent foundation stays non-networked.
+
+
+## Library implementation checkpoint — 2026-11-20
+
+The opt-in Gemini transport now implements mock-tested bounded attempts and
+notified fallback inside a fixed privacy profile. This does not approve the remaining
+proposed history/deadline/deletion defaults or enable hosted calls. Its explicit
+per-request settings are technical safety caps, not tenant quotas. The unpaid
+public/synthetic testing and future configurable paid/privacy direction are approved;
+private-account eligibility must still be verified before private use.
+
+Completed structured provider availability errors may trigger the configured alternate
+attempt; generic status codes and ambiguous failures may not. This is bounded model
+fallback, not a guarantee of unbilled or idempotent retry. Both attempts consume the
+allowance, respect backoff/deadline and retain metadata and switch reason. The HTTP
+client's implicit retries are disabled. See the [runbook](../runbooks/gemini-testing.md).

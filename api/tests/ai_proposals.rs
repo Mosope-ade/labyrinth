@@ -228,6 +228,9 @@ fn model_authority_fields_unsupported_versions_and_extra_fields_are_rejected() {
         "verified",
         "topology",
         "execute",
+        "profile",
+        "confirmed",
+        "generation_options",
     ] {
         let mut changed = raw.clone();
         changed[field] = json!("model-controlled");

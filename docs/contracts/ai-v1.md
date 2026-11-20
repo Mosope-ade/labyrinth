@@ -1,11 +1,11 @@
 # Optional AI boundary V1 — provider-independent foundation
 
-Status: contract/mock foundation; not a live AI integration. This boundary supports
-PRD FR-01 and FR-14 and preserves the [AI-free CLI workflow](cli-v1.md). The engine
-remains the sole generator and deterministic verifier. No AI key, provider SDK,
-network call, conversation persistence, new HTTP route or frontend is introduced
-by this foundation. Read-only assessment remains a future contract in this document,
-not implemented behavior in this slice.
+Status: the provider-independent review contract and opt-in Gemini library transport
+are implemented. The engine remains the sole generator and deterministic verifier;
+the [AI-free CLI workflow](cli-v1.md) is unchanged. There is no hosted AI HTTP route,
+conversation persistence or assessment service. The transport has local mock
+acceptance only; actual model certification remains separate. See the
+[Gemini testing runbook](../runbooks/gemini-testing.md) for configuration and limits.
 
 ## Authority and trust
 
@@ -204,8 +204,8 @@ omitted critical fields and fabricated WAN connectivity. No unconfirmed candidat
 may be presented as generated/verified, and model narrative cannot change
 deterministic assurance or authorize access.
 
-A later live adapter must additionally test provider failures, request cancellation,
-configured time/token/spend bounds and retention. A later assessment implementation
+The Gemini library tests provider failures, cancellation and per-request time/token
+bounds. Global spending controls and actual retention remain hosting requirements. A later assessment implementation
 must test immutable revision binding, source-content identity mismatch,
 authorization and inability to mutate deterministic evidence. Those are not claimed
 as completed acceptance by this library slice.
@@ -225,3 +225,21 @@ new model and the actual reason; they do not require approval at each switch.
 Remaining numeric/data recommendations stay proposed. [Gemini research](../research/gemini-v1.md)
 records current models and the unpaid-tier privacy restriction. No live calls or
 durable conversation storage are enabled by these decisions.
+
+
+## Gemini transport checkpoint — 2026-11-20
+
+`ai::gemini::GeminiAdapter` submits the strict proposal schema to the fixed Google
+HTTPS Interactions endpoint, disables tools, provider state, redirects and implicit
+HTTP retries, and passes the resulting raw text through `ReviewedProposal`.
+Explicit settings select the primary model, optional fallback and privacy profile.
+Only configured availability failures allow a bounded alternate attempt within the
+original deadline; unknown/ambiguous failures do not. Both attempts count against
+the allowance and failed-attempt billing can be unknown.
+
+Trusted provider metadata includes the profile and actual returned model, binding
+them to review identity. Free testing rejects private-project classification before
+I/O. Classification and paid-account eligibility must be enforced/verified by the
+hosting application; labels alone do not establish privacy. No model output can
+set profile, options or confirmation authority. The transport returns switch notices
+for future popup/CLI rendering; it does not implement those client interfaces.

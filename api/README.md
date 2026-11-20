@@ -123,8 +123,9 @@ ready-for-review status and engine defaults, and requires exact candidate/contex
 confirmation, including displayed generation options, before returning a reviewed
 input. It has no provider I/O, HTTP route,
 persistence or automatic job admission. The existing structured workflow is unchanged.
-Read [AI contracts and limits](../docs/contracts/ai-v1.md). Provider/model, live-call
-policies and hosted review lifecycle require separate decisions and implementation.
+Read [AI contracts and limits](../docs/contracts/ai-v1.md). The opt-in Gemini library
+transport is mock-tested; see [testing and privacy profiles](../docs/runbooks/gemini-testing.md).
+Hosted AI routes, budgets and review persistence remain separate work.
 
 Export the library schemas from the repository root:
 
@@ -139,4 +140,4 @@ These schemas do not advertise a live AI HTTP operation.
 
 [AI policy decisions](../docs/decisions/0012-ai-interaction-data-policy.md) select
 Gemini and automatic fallback with notifications; numerical/data recommendations
-remain proposed. No provider call or conversation storage is activated.
+remain proposed. No hosted provider route or conversation storage is activated.

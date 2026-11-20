@@ -101,3 +101,19 @@ Certify one primary combination first, then the alternate and switch behavior us
 known provider failure semantics, raw JSON rejection, human confirmation, actual model
 identity, metadata redaction and deadline/budget tests. Until then, the pair above is
 recommended for evaluation, not installed, certified or guaranteed interchangeable.
+
+
+## Transport implementation addendum — 2026-11-20
+
+The library targets the current Interactions REST shape: `/v1/interactions`,
+`steps` containing `model_output` text, and optional reported token usage including
+thought tokens. Legacy `outputs` replies, unexpected model IDs and tool/incomplete
+responses fail closed. Request configuration disables storage, tools, background
+execution and streaming. These settings do not override Google's separate logging,
+abuse-monitoring or account data terms.
+
+References: [Interactions REST](https://aistudio.google.com/api-reference/interactions-api/create-interaction),
+[Interactions overview](https://aistudio.google.com/docs/interactions-overview),
+[structured output](https://aistudio.google.com/docs/structured-output).
+Local mock acceptance is recorded in the [runbook](../runbooks/gemini-testing.md);
+the evaluation pairing above still requires real extraction/model certification.

@@ -1022,3 +1022,21 @@ adapter, external request, durable chat storage, billing account or frontend cod
 was enabled here. Private-project AI needs a suitable provider data-handling setup;
 this does not affect deterministic structured generation. Supabase acceptance
 remains independent ongoing work.
+
+
+## Gemini library transport checkpoint — 2026-11-20
+
+Implemented the opt-in Gemini adapter with configurable primary/fallback models,
+free-testing versus paid-private profiles, strict proposal validation and profile-bound
+review identity. Automatic availability fallback retains a from/to/reason notice for
+future GUI popup and CLI integration. Tools, provider state, redirects and hidden
+HTTP retries are disabled; attempts, payloads, output tokens and total deadline are
+bounded. Private-project classification is rejected in free testing before dispatch.
+Profile/account eligibility and classification require trusted hosting enforcement.
+
+Acceptance: 269 workspace Rust tests passed with all features and real local
+PostgreSQL; zero failed/ignored. No real Gemini traffic, spending, hosted AI route,
+conversation storage or frontend implementation is claimed. Global budgets,
+authenticated AI review lifecycle, retention and live model certification remain
+next gates. Existing proposed numeric/data policies are not silently approved by
+these library caps. See [Gemini testing](docs/runbooks/gemini-testing.md).

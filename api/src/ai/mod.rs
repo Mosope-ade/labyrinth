@@ -1,4 +1,5 @@
-//! Provider-independent proposal review. No HTTP, provider I/O, persistence or admission.
+//! Provider-independent proposal review. Review itself performs no I/O or admission.
+//! The opt-in `gemini` submodule supplies a separate transport; no hosted AI route exists.
 //! Engine readiness never implies user approval, feasibility or verification.
 mod types;
 use labyrinth_engine::{
@@ -64,7 +65,18 @@ impl ProviderMetadata {
         Ok(Self {
             provider: provider.into(),
             model: model.into(),
+            profile: None,
         })
+    }
+}
+impl ProviderMetadata {
+    pub fn with_profile(mut self, profile: &str) -> Result<Self, ProposalError> {
+        if profile.len() > 100 || profile.trim().is_empty() || profile.chars().any(char::is_control)
+        {
+            return Err(ProposalError::InvalidProvider);
+        }
+        self.profile = Some(profile.into());
+        Ok(self)
     }
 }
 impl ReviewedProposal {
@@ -257,3 +269,5 @@ impl std::fmt::Debug for ReviewContext {
             .finish_non_exhaustive()
     }
 }
+
+pub mod gemini;
