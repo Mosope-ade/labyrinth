@@ -995,3 +995,30 @@ frontend code was added. Provider/model and explicit data/retry policies are awa
 user decisions before live integration. Generation options need a separately bound
 review in any future hosted confirm-and-admit path. Supabase/live provider acceptance
 remains separate; no existing structured generation path depends on AI availability.
+
+
+## Review-option binding and Gemini decisions — 2026-11-18
+
+- [x] Bind the application's displayed generation options into review context and
+  the versioned `ai_review_digest_v2` identity. Changed addressing, routing,
+  verification or search settings require renewed confirmation; normal admission
+  still checks semantic validity. The owned options snapshot is capped at 64 KiB.
+- [x] Reuse the existing canonical JSON helper without changing `admission_v1`.
+  Independent fixed vectors pass with both ordinary Serde JSON and `preserve_order`;
+  the dependency lockfile is unchanged. Context Debug output hides private options.
+- [x] Full real-PostgreSQL/all-feature workspace acceptance: 254 Rust tests passed,
+  zero failed/ignored, plus strict Clippy and formatting.
+- [x] Record Gemini as the first provider family and automatic fallback with a
+  from/to/reason popup, persistent request notice and equivalent CLI notice. No
+  per-switch approval dialog is required; routing stays within configured, tested
+  alternatives and approved sharing/budget limits.
+
+[ADR 0012](docs/decisions/0012-ai-interaction-data-policy.md) distinguishes those
+confirmed choices from remaining proposed retention/deadline/data defaults.
+[Gemini research](docs/research/gemini-v1.md) records a dated evaluation pairing and
+provider privacy constraints; the pair is not yet live-certified. The user approved unpaid-tier synthetic/public-only testing and plans a
+configurable paid/privacy setup for private-project use. No Gemini
+adapter, external request, durable chat storage, billing account or frontend code
+was enabled here. Private-project AI needs a suitable provider data-handling setup;
+this does not affect deterministic structured generation. Supabase acceptance
+remains independent ongoing work.

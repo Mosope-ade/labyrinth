@@ -50,14 +50,18 @@ validated conversion boundary before submission, not an assumed YAML HTTP endpoi
    a new identity. See [AI contract](../contracts/ai-v1.md). This library foundation
    has no hosted review endpoint/session yet; its digest is not a browser auth token.
 4. Submit through normal authenticated admission with catalog, expected revision and
-   idempotency context. Bind displayed generation options before claiming approval
-   of the complete request; an intent-only confirmation does not approve options.
+   idempotency context. Display the generation options bound into the review;
+   changing any option requires a new review. Normal admission still validates them.
 5. Show queued/running/retry states from persisted backend evidence. Do not fabricate
    percent completion, ETAs, stages or solver activity absent from the API response.
-6. Show cancellation, invalid/conflicting input, infeasibility, search exhaustion,
+6. For automatic model fallback, show a non-blocking, accessible popup naming the
+   previous model, new model and actual switch reason. Keep the same notice in the
+   chat/request history and update the active-model label. Switching does not need
+   another approval click and does not imply generation or verification succeeded.
+7. Show cancellation, invalid/conflicting input, infeasibility, search exhaustion,
    timeout/inconclusive execution and operational failure distinctly. Present bounded
    attempt evidence and the next supported action; never label every failure infeasible.
-7. On publication, load the immutable revision/package, inspect evidence and download.
+8. On publication, load the immutable revision/package, inspect evidence and download.
    Only backend-published verified results receive verified status. After a stale-head
    conflict refresh context and require review; do not silently replay a mutation.
 

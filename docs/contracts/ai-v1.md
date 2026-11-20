@@ -32,7 +32,9 @@ The application boundary is `labyrinth_api::ai`:
 
 - `ProviderMetadata`: supplied by the trusted adapter, not accepted from model JSON.
 - `ReviewContext`: binds the actor, tenant, project, expected project head and
-  catalog. Creating this value does not itself authenticate or authorize anyone.
+  catalog and the displayed generation options. Its constructor requires
+  `ReviewContext::new(admission, catalog, options)`; creation does not authenticate
+  or authorize anyone.
 - `ReviewedProposal`: validates raw provider output and retains the owned review
   state. Its `parse(raw_output, prompt, context, provider)` constructor does not
   generate, persist, call a provider or submit a job.
@@ -92,9 +94,15 @@ authentication token, authorization grant or standalone persisted review receipt
 The same ordinary job-admission preconditions continue to apply: authenticated
 actor, current tenant/project authorization, expected project head, idempotency key,
 server-loaded catalog and engine-validated generation options. Generation options
-are not part of the intent proposal; they must separately pass the existing
-validated admission path. A future integrated hosted review must bind the options
-shown to the user before claiming approval of the complete generation input.
+are supplied by the application, not the model. The review context owns a canonical
+JSON snapshot displayed at `view().context.generation_options`; context equality and
+the `ai_review_digest_v2` codec bind that snapshot. Any changed option requires a new
+review. The snapshot is limited to 64 KiB of pretty JSON, matching the existing
+admission size policy. Binding is not semantic validation: options must still pass
+the existing admission checks; even matching review cannot authorize unsupported
+settings or prove feasibility. The shared canonical JSON helper preserves the
+existing `admission_v1` identity codec and keeps object-key ordering independent of
+Serde feature unification. Array order remains significant.
 Confirmation never auto-submits a job. A library-level
 review transition is neither authentication nor proof of a particular UI click.
 
@@ -138,7 +146,8 @@ provider credentials or complete rejected responses in logs or generic failures.
 The raw prompt is not separately retained by the library; its digest is retained.
 This does not make `view()` or model annotations safe for logging: annotations can
 echo private prompt text and the view contains private candidate requirements.
-`Debug` for `ReviewedProposal`/`ConfirmedProposal` redacts their content, but callers
+`Debug` for `ReviewedProposal`/`ConfirmedProposal` redacts their content;
+`ReviewContext` debug output omits the private generation-option snapshot. Callers
 must not serialize/log their views or raw intent wholesale. Render annotations as
 untrusted text, not HTML. Provider text is data; do not execute embedded commands,
 follow model-selected URLs or honor instructions to modify authorization, catalog admission or verification.
@@ -167,7 +176,9 @@ role does not automatically authorize private topology access.
 
 The following remain open; mock behavior does not settle them:
 
-- Provider/model and the supported structured-response capability.
+- Gemini is the selected initial provider family. Exact model pairing, supported
+  response profile and live certification remain to be completed; keep adapters
+  and model configuration separate from the engine.
 - Explicit consent and the minimum prompt/topology context permitted to leave the
   service, including provider data handling and assessment redaction.
 - Prompt/response/conversation persistence and retention/deletion policy, if any.
@@ -202,3 +213,15 @@ as completed acceptance by this library slice.
 Live provider, actual retention/deletion, cross-tenant HTTP authorization and
 Supabase end-to-end acceptance are separate gates. A passing mock test is not live
 provider acceptance or an assessment of real network safety.
+
+
+## Operational policy decisions
+
+[ADR 0012](../decisions/0012-ai-interaction-data-policy.md) records Gemini as the
+initial provider family and automatic fallback with a user-visible notification.
+The backend chooses only configured, tested alternatives within the same approved
+sharing scope. GUI popup/chat notice and CLI output must identify the previous and
+new model and the actual reason; they do not require approval at each switch.
+Remaining numeric/data recommendations stay proposed. [Gemini research](../research/gemini-v1.md)
+records current models and the unpaid-tier privacy restriction. No live calls or
+durable conversation storage are enabled by these decisions.

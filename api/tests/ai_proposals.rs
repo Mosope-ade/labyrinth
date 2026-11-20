@@ -27,7 +27,7 @@ fn catalog() -> CatalogSnapshot {
     catalog::load_yaml(CATALOG).unwrap()
 }
 fn context() -> ReviewContext {
-    ReviewContext::new(admission(), &catalog()).unwrap()
+    ReviewContext::new(admission(), &catalog(), &Default::default()).unwrap()
 }
 fn intent() -> Value {
     serde_json::from_str(INTENT).unwrap()
@@ -151,7 +151,7 @@ fn confirmation_is_bound_to_actor_tenant_project_head_and_catalog() {
         } else {
             catalog()
         };
-        let current = ReviewContext::new(current, &current_catalog).unwrap();
+        let current = ReviewContext::new(current, &current_catalog, &Default::default()).unwrap();
         assert!(
             matches!(
                 proposal.confirm(&current, confirmation(&digest)),
@@ -449,7 +449,7 @@ fn response_prompt_metadata_context_and_confirmation_envelopes_are_bounded() {
         }
         assert!(
             matches!(
-                ReviewContext::new(invalid, &catalog()),
+                ReviewContext::new(invalid, &catalog(), &Default::default()),
                 Err(ProposalError::InvalidContext)
             ),
             "context field {field}"

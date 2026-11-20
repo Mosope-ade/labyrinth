@@ -25,13 +25,14 @@ pub struct Assumption {
     #[schemars(length(min = 1, max = 1024))]
     pub explanation: String,
 }
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Clone, PartialEq, Eq, Serialize)]
 pub struct ReviewContext {
     pub(super) actor_id: Uuid,
     pub(super) tenant_id: Uuid,
     pub(super) project_id: Uuid,
     pub(super) expected_head: Option<Uuid>,
     pub(super) catalog_sha256: String,
+    pub(super) generation_options: serde_json::Value,
 }
 #[derive(Debug, Serialize)]
 pub struct ProviderMetadata {

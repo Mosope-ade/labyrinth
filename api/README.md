@@ -120,7 +120,8 @@ substitute for private tenant membership.
 
 `ai::ReviewedProposal` validates provider-output fixtures, exposes clarification or
 ready-for-review status and engine defaults, and requires exact candidate/context
-confirmation before returning a reviewed input. It has no provider I/O, HTTP route,
+confirmation, including displayed generation options, before returning a reviewed
+input. It has no provider I/O, HTTP route,
 persistence or automatic job admission. The existing structured workflow is unchanged.
 Read [AI contracts and limits](../docs/contracts/ai-v1.md). Provider/model, live-call
 policies and hosted review lifecycle require separate decisions and implementation.
@@ -135,3 +136,7 @@ cargo run --locked -p labyrinth-api --example export_ai_schemas -- confirmation
 Checked-in exports live under `schemas/ai-*-v1.schema.json`; fixture and schema tests
 run with `cargo test --locked -p labyrinth-api --test ai_proposals --test ai_schemas`.
 These schemas do not advertise a live AI HTTP operation.
+
+[AI policy decisions](../docs/decisions/0012-ai-interaction-data-policy.md) select
+Gemini and automatic fallback with notifications; numerical/data recommendations
+remain proposed. No provider call or conversation storage is activated.

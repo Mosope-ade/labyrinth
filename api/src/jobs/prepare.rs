@@ -98,7 +98,7 @@ impl PreparedAdmission {
         let identity = serde_json::json!({"contract":"admission_v1","tenant":context.tenant_id,"actor":context.actor_id,"project":context.project_id,"expected_head":context.expected_head,"requirements":requirements,"provenance":provenance,"options":options,"catalog":catalog});
         let digest = format!(
             "{:x}",
-            Sha256::digest(serde_json::to_vec(&canonical_identity(identity))?)
+            Sha256::digest(serde_json::to_vec(&crate::canonical::value(identity))?)
         );
         Ok(Self {
             context,
@@ -120,22 +120,6 @@ impl PreparedAdmission {
 pub fn engine_revision_id(id: Uuid) -> labyrinth_engine::model::RevisionId {
     labyrinth_engine::model::RevisionId::new(format!("rev-{id}"))
         .expect("canonical UUID with fixed alphabetic prefix")
-}
-
-// JSON object order must not depend on a transitive serde_json preserve_order
-// feature: retries across API builds use the same admission_v1 identity codec.
-fn canonical_identity(value: Value) -> Value {
-    match value {
-        Value::Object(map) => {
-            let sorted: std::collections::BTreeMap<_, _> = map
-                .into_iter()
-                .map(|(key, value)| (key, canonical_identity(value)))
-                .collect();
-            Value::Object(sorted.into_iter().collect())
-        }
-        Value::Array(values) => Value::Array(values.into_iter().map(canonical_identity).collect()),
-        other => other,
-    }
 }
 
 /// Shared AI-free readiness and supported-policy check; never generates a network.

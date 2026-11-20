@@ -12,3 +12,5 @@ pub mod artifacts;
 pub mod openapi;
 
 pub mod ai;
+
+mod canonical;

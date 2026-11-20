@@ -1,7 +1,9 @@
 //! Provider-independent proposal review. No HTTP, provider I/O, persistence or admission.
 //! Engine readiness never implies user approval, feasibility or verification.
 mod types;
-use labyrinth_engine::{catalog::CatalogSnapshot, diagnostics::JsonInputError, intent};
+use labyrinth_engine::{
+    artifacts::GenerationOptions, catalog::CatalogSnapshot, diagnostics::JsonInputError, intent,
+};
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 pub use types::*;
@@ -9,6 +11,7 @@ pub use types::*;
 pub const MAX_PROPOSAL_BYTES: usize = intent::MAX_JSON_BYTES;
 pub const MAX_PROMPT_BYTES: usize = 16 * 1024;
 pub const MAX_ASSUMPTIONS: usize = 64;
+pub const MAX_REVIEW_OPTIONS_BYTES: usize = 65_536;
 
 impl ReviewContext {
     /// Server-owned context only. This does not authorize access; admission must
@@ -16,6 +19,7 @@ impl ReviewContext {
     pub fn new(
         admission: crate::jobs::AdmissionContext,
         catalog: &CatalogSnapshot,
+        options: &GenerationOptions,
     ) -> Result<Self, ProposalError> {
         if [
             admission.actor_id,
@@ -28,12 +32,23 @@ impl ReviewContext {
         {
             return Err(ProposalError::InvalidContext);
         }
+        let generation_options = crate::canonical::value(
+            serde_json::to_value(options).map_err(|_| ProposalError::InvalidContext)?,
+        );
+        if serde_json::to_vec_pretty(&generation_options)
+            .map_err(|_| ProposalError::InvalidContext)?
+            .len()
+            > MAX_REVIEW_OPTIONS_BYTES
+        {
+            return Err(ProposalError::InvalidContext);
+        }
         Ok(Self {
             actor_id: admission.actor_id,
             tenant_id: admission.tenant_id,
             project_id: admission.project_id,
             expected_head: admission.expected_head,
             catalog_sha256: catalog.version().sha256.clone(),
+            generation_options,
         })
     }
 }
@@ -192,11 +207,14 @@ fn review_digest(
     context: &ReviewContext,
     provider: &ProviderMetadata,
 ) -> Result<String, ProposalError> {
-    let context = serde_json::to_vec(context).map_err(|_| ProposalError::InvalidContext)?;
+    let context = crate::canonical::value(
+        serde_json::to_value(context).map_err(|_| ProposalError::InvalidContext)?,
+    );
+    let context = serde_json::to_vec(&context).map_err(|_| ProposalError::InvalidContext)?;
     let provider = serde_json::to_vec(provider).map_err(|_| ProposalError::InvalidProvider)?;
     let mut hash = Sha256::new();
     for part in [
-        b"ai_review_digest_v1".as_slice(),
+        b"ai_review_digest_v2".as_slice(),
         raw_output.as_bytes(),
         prompt_sha256.as_bytes(),
         &context,
@@ -225,5 +243,17 @@ impl std::fmt::Debug for ReviewedProposal {
 impl std::fmt::Debug for ConfirmedProposal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ConfirmedProposal").finish_non_exhaustive()
+    }
+}
+
+impl std::fmt::Debug for ReviewContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ReviewContext")
+            .field("actor_id", &self.actor_id)
+            .field("tenant_id", &self.tenant_id)
+            .field("project_id", &self.project_id)
+            .field("expected_head", &self.expected_head)
+            .field("catalog_sha256", &self.catalog_sha256)
+            .finish_non_exhaustive()
     }
 }

@@ -889,3 +889,21 @@ The [frontend screen-and-flow brief](docs/product/frontend-workspace-v1.md) maps
 agreed workspace/admin requirements into navigation and states. It is design
 preparation, not visual-design approval or frontend implementation. Backend-first
 acceptance gates remain in force.
+
+
+### AI routing and review-context decisions — 2026-11-18
+
+Generation options now accompany the reviewed input and participate in its context
+and identity; a changed option requires renewed review. Binding does not replace
+normal semantic validation or authorize a job. Identity tests preserve the existing
+admission codec across JSON feature configurations.
+
+The user selected Gemini for the initial provider family and automatic model
+fallback with notification, rather than a per-switch approval prompt. Show the
+previous model, new model and actual reason in a GUI popup plus retained request
+notice, and provide equivalent CLI information. Use configured, tested alternatives
+within approved data-sharing and request limits; no model can select an arbitrary
+provider or URL. These are implementation requirements, not a claim that a live
+adapter or GUI exists. See [ADR 0012](docs/decisions/0012-ai-interaction-data-policy.md)
+and [Gemini research](docs/research/gemini-v1.md) for proposed numeric/data policies,
+model evaluation candidates and outstanding privacy/live acceptance.
